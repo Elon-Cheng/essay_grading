@@ -1,0 +1,15 @@
+{
+    storage file_system {
+        root C:/essay-grading/caddy-data
+    }
+}
+
+{$SITE_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8000
+}
+
+{$IP_BASE_URL} {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8000
+}

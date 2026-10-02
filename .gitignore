@@ -3,3 +3,8 @@ output/
 outcome/
 __pycache__/
 *.pyc
+.venv/
+__pycache__/
+*.pyc
+data/
+.env
