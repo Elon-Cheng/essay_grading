@@ -8,3 +8,8 @@ __pycache__/
 *.pyc
 data/
 .env
+*.pem
+*.key
+*.p12
+secrets/
+logs/
