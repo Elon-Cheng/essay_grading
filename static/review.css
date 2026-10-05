@@ -1,0 +1,35 @@
+@charset "UTF-8";
+.result .review-grid{display:block;border:0}
+.result .review-grid>article+article{border:0}
+.result .source-panel{margin:0 0 24px;border:1px solid #e2e7ee;border-radius:10px;background:#f8fafc}
+.result .source-panel>summary{padding:16px 20px;font-size:13px;color:#586779;font-weight:600}
+.result .source-panel .prose{max-height:400px;padding:0 24px 16px}
+.result .review-title{padding:0 0 18px;border:0}
+.result #grading{max-height:none;overflow:visible;padding:0;font-size:14px;line-height:1.95;color:#3b4656}
+#grading>section{margin-bottom:24px}
+#grading h3{margin:0;padding:0;border:0;font-size:15px;line-height:1.6;color:#293d52}
+.paragraph-review{border:1px solid #e3e8ee;border-radius:12px;overflow:hidden;background:white}
+.paragraph-heading{display:flex;align-items:center;gap:12px;padding:18px 24px;border-bottom:1px solid #edf0f4}
+.paragraph-number{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:#eaf0f7;color:#547292;font-size:12px;font-weight:700}
+.essay-text{padding:20px 28px;background:#fafbfc;border-bottom:1px solid #e8edf2;font-family:Georgia,"Times New Roman","Microsoft YaHei",serif;font-size:17px;line-height:1.95;color:#273444}
+#grading .essay-text p{margin:0 0 14px}
+#grading .essay-text p:last-child{margin-bottom:0}
+#grading .essay-text ins{color:#b74747;background:#fff0ef;text-decoration:none;border-radius:3px;padding:1px 2px}
+#grading .essay-text del{color:#6b7280;text-decoration-color:#bf5656}
+.teacher-feedback{padding:8px 28px 24px}
+.feedback-section{padding-top:18px}
+.feedback-section+.feedback-section{margin-top:16px;border-top:1px solid #edf0f4}
+.feedback-section h4{margin:0 0 8px;font-size:12px;letter-spacing:.05em;font-weight:600;color:#a55151}
+#grading .feedback-section p{margin:0 0 12px;white-space:pre-line}
+#grading .feedback-section p:last-child{margin-bottom:0}
+.review-intro{padding:20px 24px;border-left:3px solid #7696b5;background:#f4f7fb;border-radius:0 10px 10px 0}
+.review-summary{padding:26px 28px;background:#f3f7fa;border:1px solid #dfe7ef;border-radius:12px}
+.review-summary>header{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:18px}
+.summary-eyebrow{display:block;font-size:10px;letter-spacing:.15em;color:#8293a5;margin-bottom:5px}
+.review-score{display:flex;align-items:baseline;gap:7px;white-space:nowrap;color:#325677}
+.review-score strong{font-size:28px;line-height:1.3;font-weight:600;font-variant-numeric:tabular-nums}
+.review-score span{font-size:11px;color:#718295}
+#grading .review-summary table{margin-top:18px;border-radius:8px;overflow:hidden;background:#fff;font-size:13px}
+#grading .review-summary th,#grading .review-summary td{padding:11px 14px;text-align:center;border-color:#e0e7ef}
+#grading .review-summary th{background:#eaf0f6;font-weight:600}
+@media(max-width:600px){.paragraph-heading{padding:14px 16px}.essay-text{padding:18px 16px;font-size:16px}.teacher-feedback{padding:4px 16px 20px}.review-summary{padding:20px 16px}.review-summary>header{align-items:flex-start;flex-direction:column;gap:12px}.result .review-title{flex-wrap:wrap}.result #grading{font-size:13px}#grading .review-summary th,#grading .review-summary td{padding:9px 6px;font-size:12px}}

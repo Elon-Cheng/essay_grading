@@ -1,0 +1,55 @@
+name: essay-paypro-local
+services:
+  mysql:
+    image: mysql:5.7
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Missing root password}
+      MYSQL_DATABASE: pay
+      MYSQL_USER: paypro
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Missing database password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./source/src/main/resources/pay.sql:/docker-entrypoint-initdb.d/01-pay.sql:ro
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_general_ci"]
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h 127.0.0.1 -u root --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Missing Redis password}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  paypro:
+    build: ./source
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      TZ: Asia/Shanghai
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/app/appsystems/config/
+      SERVER_PORT: "8889"
+    ports:
+      - "127.0.0.1:8889:8889"
+    volumes:
+      - ./config:/app/appsystems/config:ro
+      - ./qr:/app/appsystems/qr:ro
+      - app_logs:/app/applogs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+volumes:
+  mysql_data:
+  redis_data:
+  app_logs:

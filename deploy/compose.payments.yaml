@@ -1,0 +1,19 @@
+# Optional overlay: docker compose -f compose.yaml -f deploy/compose.payments.yaml up -d
+# Store real PEM files in ./secrets (ignored by git); never bake merchant keys into an image.
+services:
+  app:
+    volumes:
+      - ./secrets:/run/merchant-secrets:ro
+    environment:
+      WECHAT_PRIVATE_KEY_PATH: /run/merchant-secrets/wechat-private.pem
+      WECHAT_PUBLIC_KEY_PATH: /run/merchant-secrets/wechat-public.pem
+      ALIPAY_PRIVATE_KEY_PATH: /run/merchant-secrets/alipay-private.pem
+      ALIPAY_PUBLIC_KEY_PATH: /run/merchant-secrets/alipay-public.pem
+  worker:
+    volumes:
+      - ./secrets:/run/merchant-secrets:ro
+    environment:
+      WECHAT_PRIVATE_KEY_PATH: /run/merchant-secrets/wechat-private.pem
+      WECHAT_PUBLIC_KEY_PATH: /run/merchant-secrets/wechat-public.pem
+      ALIPAY_PRIVATE_KEY_PATH: /run/merchant-secrets/alipay-private.pem
+      ALIPAY_PUBLIC_KEY_PATH: /run/merchant-secrets/alipay-public.pem

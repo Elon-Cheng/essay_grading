@@ -1,0 +1,38 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),vm=require('node:vm'),{parseHTML}=require('linkedom');
+const {document}=parseHTML(fs.readFileSync('static/index.html','utf8'));
+const context=vm.createContext({document});
+vm.runInContext(fs.readFileSync('static/review-language.js','utf8')+'\nglobalThis.controller=ReviewLanguage;',context);
+const english={original:['He go.'],translations:{en:{},zh:{'Use goes with He.':'He 作主语时用 goes。','A concise phrase.':'简洁的表达。','The purpose is clear.':'写作目的清晰。'}},annotations:[{id:'P1.1',quote:'He go.',correction:'He goes.',comment:'Use goes with He.'},{id:'P1.2',comment:'A concise phrase.'}],review:{paragraphs:[{paragraph:1,feedback:[{title:'段落点评',text:'The purpose is clear.'}]}],overall:'本篇文章打分估计为：18–19分',evaluation:{version:3,blocks:[{title:'综合评价',comprehensive_sections:[{title:'Strengths',text:'The purpose is clear.'}]}]}}};
+(async()=>{
+  let rendered,calls=0;
+  const api=()=>{calls++;throw Error('Click must not request translation');};
+  const render=p=>rendered=p;
+  await context.controller.show('one',english,render,api);
+  const realProjection=JSON.parse(JSON.stringify(english));
+  Object.assign(realProjection.review.evaluation.blocks[0],{text:'Strengths: The purpose is clear.',analysis:'Strengths：The purpose is clear.',suggestions:'Action Plan：Keep the purpose clear.'});
+  await context.controller.show('projection',realProjection,render,api);
+  context.controller.toggle('evaluation','综合评价');
+  assert.equal(rendered.review.evaluation.blocks[0].comprehensive_sections[0].text,'写作目的清晰。');
+  assert.equal(rendered.review.evaluation.blocks[0].text,'Strengths: The purpose is clear.');
+  await context.controller.show('one',english,render,api);
+  context.controller.toggle('annotation','P1.1');
+  assert.equal(rendered.annotations[0].comment,'He 作主语时用 goes。'); // synchronous
+  assert.equal(rendered.annotations[1].comment,'A concise phrase.');
+  assert.equal(rendered.annotations[0].quote,'He go.');assert.equal(rendered.annotations[0].correction,'He goes.');
+  assert.equal(rendered.review.paragraphs[0].feedback[0].text,'The purpose is clear.');
+  context.controller.toggle('annotation','P1.1');assert.equal(rendered.annotations[0].comment,'Use goes with He.');
+  context.controller.toggle('evaluation','综合评价');
+  assert.equal(rendered.review.evaluation.blocks[0].comprehensive_sections[0].text,'写作目的清晰。');
+  context.controller.toggle('paragraph','1');assert.equal(rendered.review.paragraphs[0].feedback[0].text,'写作目的清晰。');
+  await context.controller.show('one',english,render,api);assert.equal(rendered.review.paragraphs[0].feedback[0].text,'写作目的清晰。');
+  const changed=JSON.parse(JSON.stringify(english));changed.annotations[0].comment='Updated feedback.';
+  await context.controller.show('one',changed,render,api);context.controller.toggle('annotation','P1.1');
+  assert.equal(rendered.annotations[0].comment,'Updated feedback.');
+  await context.controller.show('two',english,render,api);assert.equal(rendered.annotations[0].comment,'Use goes with He.');
+  const legacy=JSON.parse(JSON.stringify(english));legacy.annotations[0].comment='原有点评。';legacy.translations.en={'原有点评。':'Use goes with He.'};
+  await context.controller.show('legacy',legacy,render,api);assert.equal(rendered.annotations[0].comment,'Use goes with He.');
+  assert.equal(calls,0);
+  assert.equal(english.annotations[0].comment,'Use goes with He.');
+  console.log('Synchronous scoped switching, immutable English, missing/stale translations, polling and zero requests passed.');
+})().catch(error=>{console.error(error);process.exitCode=1;});

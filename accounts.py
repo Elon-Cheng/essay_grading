@@ -18,14 +18,9 @@ router = APIRouter(prefix='/api')
 
 @contextmanager
 def database():
-    DB.parent.mkdir(parents=True, exist_ok=True)
-    db = sqlite3.connect(DB, timeout=15)
-    db.row_factory = sqlite3.Row
-    try:
-        with db:
-            yield db
-    finally:
-        db.close()
+    from storage import connect
+    with connect(DB) as db:
+        yield db
 
 def initialize():
     with database() as db:
@@ -37,9 +32,11 @@ def initialize():
         CREATE INDEX IF NOT EXISTS personal_events ON events(user_id,id);
         CREATE TABLE IF NOT EXISTS attempts(key TEXT PRIMARY KEY, count INTEGER, reset REAL);
         ''')
-        columns = {row['name'] for row in db.execute('PRAGMA table_info(users)').fetchall()}
+        columns = db.columns('users')
         if 'role' not in columns:
             db.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user','vip','admin'))")
+        from saas import migrate
+        migrate(db)
 
 def digest(value):
     return hashlib.sha256(value.encode()).hexdigest()
@@ -54,9 +51,9 @@ def audit(user_id, action, detail=''):
 
 def current_user(request: Request):
     with database() as db:
-        row = db.execute('SELECT users.id,username,role FROM users JOIN sessions ON users.id=sessions.user_id WHERE token=? AND expires>?',
+        row = db.execute('SELECT users.id,username,role,disabled FROM users JOIN sessions ON users.id=sessions.user_id WHERE token=? AND expires>?',
                          (digest(request.cookies.get(COOKIE,'')), time.time())).fetchone()
-    if not row:
+    if not row or row['disabled']:
         raise HTTPException(401,'请先登录')
     return dict(row)
 
@@ -124,7 +121,7 @@ def throttle(request):
             raise HTTPException(429,'操作过于频繁，请在 15 分钟后重试')
         count=row['count']+1 if row and row['reset']>now else 1
         reset=row['reset'] if row and row['reset']>now else now+900
-        db.execute('INSERT OR REPLACE INTO attempts VALUES(?,?,?)',(key,count,reset))
+        db.execute('INSERT INTO attempts(key,count,reset) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET count=excluded.count,reset=excluded.reset',(key,count,reset))
 
 @router.post('/auth/register',status_code=201)
 def register(data: Credentials, request: Request, response: Response):
@@ -133,10 +130,15 @@ def register(data: Credentials, request: Request, response: Response):
     hashed=password_hash(data.password)
     try:
         with database() as db:
-            cursor=db.execute('INSERT INTO users(username,password) VALUES(?,?)',(name,hashed))
+            cursor=db.execute('INSERT INTO users(username,password,created) VALUES(?,?,?)',(name,hashed,time.time()))
             user={'id':cursor.lastrowid,'username':name,'role':'user'}
-    except sqlite3.IntegrityError:
-        raise HTTPException(409,'该用户名已注册')
+            visitor = request.cookies.get('essay_visitor')
+            if visitor:
+                db.execute('INSERT INTO product_events VALUES(?,?,?,?,?)', (secrets.token_hex(16), user['id'], digest(visitor), 'registered', time.time()))
+    except Exception as exc:
+        if isinstance(exc, sqlite3.IntegrityError) or getattr(exc, 'sqlstate', None) == '23505':
+            raise HTTPException(409,'该用户名已注册') from None
+        raise
     audit(user['id'],'register','注册账号')
     new_session(response,request,user)
     return user
@@ -149,7 +151,7 @@ def login(data: Credentials, request: Request, response: Response):
         row=db.execute('SELECT * FROM users WHERE username=?',(name,)).fetchone()
     stored=row['password'] if row else password_hash('dummy-password','00'*16)
     valid=hmac.compare_digest(password_hash(data.password,stored.split(':')[0]),stored)
-    if not row or not valid:
+    if not row or not valid or row['disabled']:
         raise HTTPException(401,'用户名或密码错误')
     user={'id':row['id'],'username':row['username'],'role':row['role']}
     new_session(response,request,user)

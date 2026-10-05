@@ -1,0 +1,134 @@
+/* Three-column reading desk: original / learning / overall analysis. */
+.evaluation-group{margin-top:24px}.review-summary .evaluation-group>h3{display:block;border:0;background:none;padding:0;font-size:19px;margin:0 0 18px}.evaluation-hint{font-size:13px;color:#667085;margin:0 0 20px}.evaluation-dimensions{border-top:2px solid #e7eef9;padding-top:24px}
+:root{font-family:Inter,Arial,"PingFang SC","Microsoft YaHei",sans-serif}
+.workspace-grid,.result .review-grid{grid-template-columns:minmax(0,38fr) minmax(0,32fr) minmax(0,30fr);gap:0}
+.workspace-grid>*,.result .review-grid>*{padding:0 24px;min-width:0}
+.workspace-grid>:first-child,.result .review-grid>:first-child{padding-left:0}
+.workspace-grid>:last-child,.result .review-grid>:last-child{padding-right:0}
+.feedback-placeholder,.result .feedback-panel,.result .evaluation-panel{border-left:1px solid #e4e7ec}
+.upload-card{border-right:0}.guide{border:0;border-left:1px solid #e4e7ec;background:#fff;border-radius:0}
+.upload-card h2,.guide h2,.essay-heading h2{font-size:25px;font-weight:700;color:#1f2937;margin:0}
+.essay-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0 18px}
+.essay-stats{display:flex;gap:6px;flex-wrap:wrap}.essay-stats span{background:#f3f4f6;border:1px solid #e1e5ea;border-radius:7px;padding:5px 8px;color:#667085;font-size:12px;white-space:nowrap}
+.essay-tools{display:flex;gap:9px;margin-bottom:20px}.essay-tools button{background:#f3f8ff;border:1px solid #bdd7ff;color:#3679d8;border-radius:8px;padding:8px 12px;font-size:13px}.essay-tools button:hover,.essay-tools button[aria-expanded="true"]{background:#e8f1ff}
+.connective-help{padding:15px;background:#f3f8ff;color:#52647e;border-radius:8px;font-size:13px;line-height:1.9;margin-bottom:18px}.connective-help p{margin:8px 0}.connective-help small{color:#73839b}
+.prompt-panel{background:#f8faff;border:1px solid #e8edf5;border-radius:8px;margin-bottom:20px}.result .prompt-panel .review-title{padding:12px 0 8px;margin:0;border:0}#essay-prompt{font-size:13px;line-height:1.8}
+.result .source-panel .prose{font-family:Arial,Inter,sans-serif;font-size:20px;line-height:1.85;color:#222831}
+.original-paragraph{grid-template-columns:minmax(0,1fr);margin-bottom:26px}
+.mark-legend{font-size:11px;gap:8px 12px;margin-bottom:22px}.mark-legend .good-point,.word-mark.good-point{background:#e7fbea;color:inherit;text-decoration:underline;text-decoration-color:#28be58;text-decoration-thickness:3px;text-underline-offset:5px}.mark-legend .suggestion,.word-mark.suggestion{background:#fff8e8;border-bottom:3px solid #f4b83d;color:inherit}.word-mark.error{background:#fff1f0;color:#bb4141;text-decoration-color:#df7770}.sentence-key{color:#9173c7}.word-mark[data-level="sentence"]::after{content:'◌';display:inline-block;color:#9475cb;background:#eee7fb;border-radius:5px;font-size:12px;line-height:1.3;vertical-align:super;margin-left:3px;padding:0 3px}
+.panel-tabs{height:57px;gap:0;justify-content:space-between;font-size:15px;margin-bottom:20px;border-bottom:1px solid #e4e7ec}
+.panel-tabs button,.preview-tabs>span{display:flex;align-items:center;justify-content:center;gap:6px;background:transparent;border:0;border-bottom:3px solid transparent;color:#788394;font-size:14px;font-weight:600;padding:0 5px;white-space:nowrap}
+.panel-tabs button[aria-selected="true"],.preview-tabs>.selected{color:#2563eb;border-bottom:3px solid #2563eb}.panel-tabs small{font-size:10px;padding:2px 5px;border-radius:5px;background:#f1f3f6;color:#8993a2}.panel-tabs button[aria-selected="true"] small,.preview-tabs>.selected small{background:#eaf2ff;color:#397cf6}
+.result #grading{font-size:14px;line-height:1.85}.result #grading>[role="tabpanel"]{margin-bottom:0}.annotation-card{border:1px solid #e8ebef;border-radius:10px;padding:16px;margin-bottom:13px}.annotation-card header{gap:7px}.quote-link{display:block;width:100%;font-size:17px;line-height:1.6;color:#374151;margin-top:3px}.annotation-card p{font-size:13px;color:#627086;line-height:1.9}.kind-tag,.level-tag{font-size:10px}.correction{font-size:14px;padding:10px 12px;line-height:1.7}.annotation-card.good-point p{background:#eef5ff;padding:12px;border-radius:7px;color:#586e8c}.annotation-card.good-point .quote-link{color:#15875e}
+#panel-vocabulary{padding:15px;background:linear-gradient(135deg,#effff5,#fffdeb);border-radius:10px}.tab-intro{font-size:12px;color:#378568;margin:0 0 14px!important}.tab-empty{padding:36px 18px;text-align:center;background:#f8faff;border-radius:10px;color:#8793a6;line-height:2;font-size:13px}
+.result .paragraph-review{border-radius:10px;border-color:#e8ebef}.result #grading .paragraph-heading h3{font-size:14px}.paragraph-heading{padding:14px}.teacher-feedback{padding:0 16px 18px}.result .feedback-section h4{font-size:13px;color:#5f7090}.result .feedback-section p{font-size:14px}
+.result .evaluation-panel>.review-title{min-height:57px;padding:8px 0 17px;margin-bottom:20px}.result .evaluation-panel>.review-title h3{font-size:23px;font-weight:700;color:#1f2937}.evaluation-star{color:#f1b938}.evaluation-panel>.review-title>span{display:none}
+#evaluation{font-size:14px;line-height:1.9}.review-summary{border:0;background:#fff;border-radius:0;padding:0}.review-score{padding:20px;background:#f7faff;border:1px solid #e7eef9;border-radius:10px;margin-bottom:24px}.review-score strong{color:#397cf6;font-size:60px}.review-summary h3,.review-context h4{display:table;border:1px solid #b9d8fc;padding:5px 9px;border-radius:6px;font-size:15px;background:#fcfdff;color:#26384f;margin:22px 0 12px}.review-context{border:0;border-bottom:1px solid #e8edf4;padding:0 0 18px;border-radius:0}.review-context h4{margin-top:0}.review-summary table{font-size:12px}.waiting-state{min-height:400px}.waiting-state h2{font-size:17px}.waiting-state p{font-size:13px}.guide .rubric-row{font-size:14px}.guide-tip b,.guide-tip p{font-size:12px}
+@media(min-width:1101px){.result .source-panel,.result .feedback-panel,.result .evaluation-panel{position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;scrollbar-width:thin;scrollbar-color:#dce3ee transparent}.review-tabs{position:sticky;top:0;background:white;z-index:2}}
+@media(max-width:1250px) and (min-width:1101px){.workspace-grid>*,.result .review-grid>*{padding-left:16px;padding-right:16px}.panel-tabs button{font-size:12px;gap:3px}.result .evaluation-panel>.review-title h3{font-size:21px}.result .source-panel .prose{font-size:18px}}
+@media(max-width:1100px){.workspace-grid,.result .review-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.guide,.result .evaluation-panel{grid-column:1/-1;border-left:0;border-top:1px solid #e4e7ec;margin-top:24px;padding:24px 0}.workspace-grid>:nth-child(2),.result .review-grid>:nth-child(2){padding-right:0}.result .source-panel{position:static;max-height:none;overflow:visible}.guide{display:block}}
+@media(max-width:700px){.workspace-grid,.result .review-grid{grid-template-columns:minmax(0,1fr)}.workspace-grid>*,.result .review-grid>*{padding:0;border-left:0}.feedback-placeholder,.result .feedback-panel{border-top:1px solid #e4e7ec;margin-top:24px;padding-top:12px}.result .evaluation-panel,.guide{padding-top:24px}.result .source-panel .prose{font-size:18px;max-height:none}.essay-heading h2{font-size:23px}.panel-tabs button{font-size:14px}.sidebar{display:flex}.shell{margin-left:64px}.essay-stats span{font-size:10px}.result>.section-head{gap:12px}.guide h2{font-size:23px}}
+
+/* Reading hierarchy: phrase / explanation / example / next action. */
+.result .source-panel .prose{font-size:21px;line-height:1.85}
+.panel-tabs button,.preview-tabs>span{font-size:16px;padding:0 8px;gap:7px}
+.panel-tabs small{font-size:12px;min-width:20px;text-align:center}
+.essay-stats span{font-size:13px}.essay-tools button{font-size:14px;min-height:35px}
+.annotation-card{padding:18px;border-radius:11px;margin-bottom:14px}
+.quote-link{font-size:19px;font-weight:600}.quote-link>span{font-size:13px;color:#8394ab}
+.annotation-card p,.result .feedback-section p{font-size:16px;line-height:1.8;color:#48566b}
+.kind-tag,.level-tag{font-size:11px}.correction{font-size:16px;padding:12px 14px}
+.result .feedback-section h4{font-size:15px;font-weight:650}.result #grading .paragraph-heading h3{font-size:16px}
+.vocabulary-heading{padding:3px 2px 15px}.vocabulary-heading h4{margin:0;color:#15875e;font-size:19px;font-weight:650}.vocabulary-heading p{font-size:13px;color:#708979;margin:6px 0 0!important}
+.learning-card{background:#fff}.learning-card header{align-items:flex-start}.annotation-card.learning-card .quote-link{margin-top:4px;color:#374151;font-family:Arial,Inter,sans-serif}
+.annotation-card.learning-card .word-meaning{background:none;padding:0;border-radius:0;font-size:16px;color:#38485c;margin:10px 0 14px;line-height:1.7}
+.word-usage{font-size:14px;line-height:1.8;color:#667085;margin:0 0 14px}.word-usage>span,.word-example>span{display:block;font-size:11px;letter-spacing:.04em;color:#8492a5;margin-bottom:4px}
+.word-example{padding:12px 14px;background:#eef5ff;border-radius:8px;margin-top:13px}
+.annotation-card .word-example p{background:none;padding:0;margin:0;font-family:Arial,Inter,sans-serif;font-style:italic;font-size:16px;line-height:1.8;color:#5b6c86}
+.word-example mark{background:#ddeaff;color:#355b8d;border-radius:3px;padding:1px 2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.learning-card footer{font-size:11px;color:#8a97a9;margin-top:14px;padding-top:10px;border-top:1px solid #edf0f4}
+#evaluation{font-size:16px;line-height:1.8;color:#344054}.review-summary p{white-space:pre-line}
+.review-summary .analysis-section h4,.review-context h4{display:table;font-size:17px;font-weight:700;color:#26384f;background:#fcfdff;border:1px solid #a8d3ff;border-radius:8px;padding:5px 10px;margin:0 0 14px}
+.analysis-section{padding:0 0 22px;margin:0 0 22px;border-bottom:1px solid #edf0f4}.analysis-section:last-child{border-bottom:0;margin-bottom:0}
+.training-priority{padding:18px;background:#f4f8ff;border:1px solid #e0eaff;border-radius:10px}
+.rubric-reference{margin:18px 0 0;padding-top:14px;border-top:1px solid #e8edf4}.rubric-reference summary{font-size:13px;color:#6f819a;cursor:pointer}.rubric-reference table{margin-top:14px}
+.review-score{position:relative;margin-bottom:26px;padding:22px}.review-score .score-label{font-size:12px;color:#788ba8;margin-bottom:5px}.review-score strong{font-size:58px;letter-spacing:-2px}
+.result .evaluation-panel>.review-title h3{font-size:25px}.word-mark.good-point:hover,.word-mark.suggestion:hover{filter:brightness(.97)}
+.word-mark[data-level="sentence"]::after{content:'···';background:#eee7fb;color:#9475cb;border:1px solid #d8cdf8;border-radius:6px 6px 6px 0;padding:0 4px;font-weight:700}
+@media(max-width:1250px) and (min-width:1101px){.panel-tabs button{font-size:14px;padding:0 3px;gap:4px}.panel-tabs small{font-size:11px}.quote-link{font-size:18px}.result .source-panel .prose{font-size:19px}.result .evaluation-panel>.review-title h3{font-size:23px}}
+@media(max-width:700px){.result .source-panel .prose{font-size:19px}.panel-tabs button{font-size:14px;padding:0 3px;gap:4px}.panel-tabs small{font-size:11px;min-width:18px}.annotation-card{padding:15px}.essay-stats span{font-size:11px}.essay-tools button{font-size:13px}.quote-link{font-size:18px}#evaluation,.result .feedback-section p,.annotation-card p{font-size:15px}.result .evaluation-panel>.review-title h3{font-size:24px}}
+
+/* Compact evaluation prose follows the teacher's report layout. */
+.result .evaluation-panel{padding-left:4px;padding-right:0}
+.result .evaluation-panel>.review-title{padding:0 0 10px;margin:0;border:0}
+.result .evaluation-panel>.review-title h3{font-size:14px;font-weight:700;color:#1f2937}
+.result .evaluation-panel>.review-title>span{display:none}
+.result #evaluation{font-family:Arial,"Segoe UI",sans-serif;font-size:14px;line-height:1.35;color:#171717}
+.result #evaluation .review-summary{padding:0;background:transparent;border:0;border-radius:0}
+.result #evaluation .review-score{display:none}
+.result #evaluation .feedback-translate{display:block;margin:0 0 9px auto}
+.result #evaluation .analysis-section{margin:0 0 9px;padding:0;border:0}
+.result #evaluation .analysis-section h4{display:inline;margin:0;font-size:14px;line-height:1.35;font-weight:700;color:#172033;letter-spacing:0}
+.result #evaluation .analysis-section h4 + p{display:inline;margin:0}
+.result #evaluation .analysis-section h5{display:inline;margin:0;font-size:14px;font-weight:700;color:#172033}
+.result #evaluation p{display:block;margin:0 0 9px;white-space:pre-line;font-size:14px;line-height:1.35}
+.result #evaluation h3{font-size:14px;margin:0 0 9px;color:#172033}
+.result #evaluation ul{margin:0 0 9px;padding-left:16px}
+.result #evaluation li{padding-left:1px;margin:0 0 4px;line-height:1.35}
+.result #evaluation em{font-style:italic}
+.result #evaluation .evaluation-analysis,.result #evaluation .evaluation-suggestions{margin:0 0 9px}
+.result #evaluation .evaluation-analysis p,.result #evaluation .evaluation-suggestions p{display:inline}
+.result #evaluation .review-context{margin:0 0 9px}
+.result #evaluation .review-context h4{display:inline;margin:0;font-size:14px;color:#172033}
+.result #evaluation .review-context h4 + p{display:inline}
+.result #evaluation .analysis-section{margin-bottom:8px}
+.result #evaluation .analysis-section:last-child{margin-bottom:0}
+.result #evaluation .evaluation-analysis,.result #evaluation .evaluation-suggestions{display:block;margin:0 0 7px;padding:0;background:transparent;border:0;border-radius:0}
+.result #evaluation .evaluation-analysis:last-child,.result #evaluation .evaluation-suggestions:last-child{margin-bottom:0}
+.result #evaluation .evaluation-analysis h5,.result #evaluation .evaluation-suggestions h5{display:inline;margin:0;font-size:14px;line-height:1.35;color:#172033}
+.result #evaluation .evaluation-analysis p,.result #evaluation .evaluation-suggestions p{display:inline;margin:0;font-size:14px;line-height:1.35}
+.result #evaluation .evaluation-analysis ul,.result #evaluation .evaluation-suggestions ul{display:block;margin:4px 0 0;padding-left:16px}
+.result #evaluation .evaluation-analysis li,.result #evaluation .evaluation-suggestions li{margin:0 0 3px;line-height:1.35}
+.result #evaluation .evaluation-analysis li:last-child,.result #evaluation .evaluation-suggestions li:last-child{margin-bottom:0}
+@media(max-width:700px){.result #evaluation{font-size:14px}.result #evaluation p,.result #evaluation h4,.result #evaluation h5{font-size:14px}}
+
+.evaluation-analysis h5,.evaluation-suggestions h5{font-size:14px;margin:12px 0 8px;color:#42526b}.evaluation-suggestions{background:#f6f9ff;border-radius:8px;padding:1px 12px 8px;margin-top:12px}.evaluation-panel .analysis-section h4{max-width:100%;overflow-wrap:anywhere}
+
+.review-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.review-actions [role="status"]{font-size:13px;max-width:260px}.review-actions button:disabled{opacity:.65;cursor:wait}
+
+.feedback-translate{border:0;border-radius:4px;background:#f0f2f5;color:#647084;font-size:12px;padding:4px 9px;cursor:pointer;margin:0 0 10px auto;display:block}.feedback-translate:disabled{opacity:.6;cursor:wait}.annotation-card header .feedback-translate,.paragraph-heading .feedback-translate{margin:0 0 0 auto}.feedback-translate-error{color:#c43838;font-size:12px}.analysis-section>.feedback-translate{margin-top:-8px}
+.paragraph-heading{flex-wrap:wrap}.paragraph-heading .feedback-translate{flex-shrink:0}
+
+/* Narrow, independently scrolling overall evaluation sidebar. */
+.workspace-grid>.guide,.result .review-grid>.evaluation-panel{box-sizing:border-box;padding:16px;background:#fff;border:1px solid #e4e7ec;border-top:3px solid #397cf6;border-radius:8px;min-width:0;max-height:calc(100dvh - 40px);overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#dce3ee transparent;font-size:12.5px;line-height:17.5px}
+.workspace-grid>.guide{display:block}
+.guide h2,.result .evaluation-panel>.review-title h3{font-family:inherit;font-size:18px;line-height:24px;font-weight:700;margin:0;color:#1f2937}
+.result .evaluation-panel>.review-title{min-height:0;padding:0 0 12px;margin:0 0 12px;border-bottom:1px solid #edf0f4}
+.guide>.eyebrow{margin-bottom:6px}
+.result #evaluation{font-family:Arial,"Segoe UI","Microsoft YaHei",sans-serif;font-size:12.5px;line-height:17.5px;overflow:visible;max-height:none;color:#344054}
+.result #evaluation .review-summary{padding:0;background:transparent;border:0}
+.result #evaluation .review-score{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 0;margin:0 0 14px;background:transparent;border:0;border-radius:0;white-space:nowrap;text-align:center}
+.result #evaluation .review-score strong,.guide .empty-score strong{display:block;width:auto;height:auto;border:0;border-radius:0;background:transparent;font-family:Arial,Helvetica,sans-serif;font-size:84px;font-weight:400;color:#36B7C1;line-height:1;letter-spacing:normal;text-align:center}
+.result #evaluation .review-score .score-label{margin:0;font-size:12.5px;line-height:17.5px;color:#667085}
+.result #evaluation .review-score span:not(.score-label){font-size:12px;line-height:17.5px;color:#7a8495}
+.guide .empty-score{flex-direction:column;align-items:center;justify-content:center;gap:6px;margin:18px 0 9px;text-align:center}
+.guide .empty-score span{font-size:12px;line-height:17.5px}
+.guide>.score-caption{font-size:12.5px;line-height:17.5px;margin:0 0 9px}
+.guide .rubric-row{padding:12px 0;font-size:12.5px;line-height:17.5px}
+.guide .guide-tip{padding:12px;margin:9px 0}
+.guide .guide-tip p{font-size:12.5px;line-height:17.5px;margin:9px 0 0}
+.result #evaluation .evaluation-group{margin-top:0}
+.result #evaluation .analysis-section,.result #evaluation .review-context{margin:0 0 9px;padding:0;border:0;background:transparent;border-radius:0}
+.result #evaluation .analysis-section h4,.result #evaluation .review-context h4{display:block;border:0;border-radius:0;background:transparent;padding:0;margin:0 0 9px;font-size:12.5px;line-height:17.5px;font-weight:700;color:#172033}
+.result #evaluation h3,.result #evaluation .evaluation-group>h3{display:block;padding:0;border:0;margin:0 0 9px;font-size:12.5px;line-height:17.5px}
+.result #evaluation .analysis-section h5,.result #evaluation .evaluation-analysis h5,.result #evaluation .evaluation-suggestions h5{display:inline;margin:0;font-size:12.5px;line-height:17.5px;font-weight:700}
+.result #evaluation p,.result #evaluation .analysis-section h4+p,.result #evaluation .review-context h4+p{display:block;margin:0 0 9px;font-size:12.5px;line-height:17.5px}
+.result #evaluation .evaluation-analysis,.result #evaluation .evaluation-suggestions{margin:0 0 9px;padding:0;background:transparent;border:0;border-radius:0}
+.result #evaluation .evaluation-analysis p,.result #evaluation .evaluation-suggestions p{display:inline;margin:0;font-size:12.5px;line-height:17.5px}
+.result #evaluation ul,.result #evaluation .evaluation-analysis ul,.result #evaluation .evaluation-suggestions ul{margin:0 0 9px;padding-left:16px}
+.result #evaluation li,.result #evaluation .evaluation-analysis li,.result #evaluation .evaluation-suggestions li{margin:0 0 4px;line-height:17.5px}
+.result #evaluation .analysis-section:last-child,.result #evaluation .evaluation-analysis:last-child,.result #evaluation .evaluation-suggestions:last-child{margin-bottom:0}
+.result #evaluation .rubric-reference{margin-top:9px;padding-top:9px}
+.result #evaluation .rubric-reference summary,.result #evaluation table{font-size:12px;line-height:17.5px}
+@media(min-width:1101px){.workspace-grid,.result .review-grid{grid-template-columns:minmax(0,50fr) minmax(0,27fr) minmax(0,23fr);gap:0}.workspace-grid>.guide,.result .review-grid>.evaluation-panel{position:sticky;top:20px;grid-column:auto}}
+@media(max-width:1100px){.workspace-grid>.guide,.result .review-grid>.evaluation-panel{position:static;max-height:70dvh;margin-top:24px}}

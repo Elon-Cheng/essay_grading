@@ -1,0 +1,24 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const {parseHTML}=require('linkedom');
+const {document}=parseHTML(fs.readFileSync('static/credit-payment.html','utf8'));
+let poll,cleared=false,requests=[];
+let order={orderNo:'ESSAYTEST',productName:'基础套餐',essayCredits:5,paymentMethod:'wechat',amount:9.9,status:'PENDING',payNum:'98765',expiresAt:Date.now()/1000+900,qrCodeUrl:'https://pay.example.com/qr.png',paymentUrl:'https://pay.example.com/pay',error:null};
+const context=vm.createContext({document,location:{pathname:'/payment/ESSAYTEST'},setInterval:fn=>(poll=fn,1),clearInterval:()=>cleared=true,addEventListener:()=>{},fetch:async(url,options)=>{requests.push([url,options]);return {ok:true,status:200,json:async()=>structuredClone(order)};}});
+vm.runInContext(fs.readFileSync('static/credit-payments.js','utf8'),context);
+(async()=>{
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(document.querySelector('#credit-qr').hidden,false);
+  assert.match(document.querySelector('#credit-description').textContent,/5 次批改.*9.90/);
+  assert.match(document.querySelector('#credit-description').textContent,/付款备注：98765/);
+  assert.equal(document.querySelector('#credit-done').hidden,true);
+  order.status='PAID';await poll();
+  assert.match(document.querySelector('#credit-state').textContent,/已增加 5 次/);
+  assert.equal(document.querySelector('#credit-qr').hidden,true);
+  assert.equal(document.querySelector('#credit-provider').hidden,true);
+  assert.equal(document.querySelector('#credit-done').hidden,false);
+  assert.equal(cleared,true);
+  assert.ok(requests.every(([url,options])=>url.endsWith('/status')&&!options));
+  order.status='EXPIRED';await poll();
+  assert.match(document.querySelector('#credit-state').textContent,/请勿继续付款/);
+  console.log('Credit checkout displays provider QR, polls only server status, and hides payment controls after settlement/expiry.');
+})().catch(error=>{console.error(error);process.exitCode=1;});

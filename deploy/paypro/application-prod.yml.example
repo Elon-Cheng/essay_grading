@@ -1,0 +1,74 @@
+spring:
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: ${MAIL_HOST}
+paypro:
+  site: ${PAYPRO_PUBLIC_URL}
+  alipayUserId: ''
+  alipayCustomQrUrl: ''
+  alipayDmfAppId: ''
+  alipayDmfAppPrivateKey: ''
+  alipayDmfPublicKey: ''
+  alipayDmfSubject: Essay membership
+  title: Essay membership payment
+  indexTitle: Essay membership payment
+  name: ${PAYPRO_RECEIVER_NAME}
+  mobile: ''
+  email:
+    receiver: ${PAYPRO_REVIEW_EMAIL}
+    sender: ${MAIL_USERNAME}
+  supportMail: ${PAYPRO_SUPPORT_EMAIL}
+  rateLimit:
+    ipExpire: 1
+  token:
+    value: ${PAYPRO_ADMIN_TOKEN_SECRET}
+    expire: 14
+  openapi:
+    secret: ${PAYPRO_SECRET}
+  qrCodeNum: 1
+  decrement:
+    enabled: false
+    maxCount: 2
+    step: 0.01
+  downloadUrl: ''
+  payMethods:
+  - id: alipay
+    name: 支付宝支付
+    description: 免输备注，手动收款
+    icon: 🔵
+    status: false
+    allow-night: false
+    use-local-qr-code: false
+  - id: wechat
+    name: 微信支付
+    description: 需备注，自动确认收款
+    icon: 🟢
+    status: false
+    allow-night: true
+    use-local-qr-code: true
+  - id: wechat_zs
+    name: 微信赞赏码支付
+    description: 需备注，自动确认收款
+    icon: 🟢
+    status: false
+    allow-night: false
+    use-local-qr-code: true
+  - id: alipay_dmf
+    name: 支付宝当面付
+    description: 支付宝官方产品，无需营业执照，免备注自动收款
+    icon: 🔵
+    status: false
+    allow-night: true
+    use-local-qr-code: false
+  qr-dir: /app/appsystems/qr

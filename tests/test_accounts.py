@@ -52,7 +52,7 @@ class AccountTests(unittest.TestCase):
         self.b.post('/api/auth/register',json={'username':'teacher_b','password':'another-password'})
         fixture=next((app.ROOT/'tests'/'cases').glob('*.docx'))
         with patch.object(app,'run_job'):
-            r=self.a.post('/api/essays',files={'file':(fixture.name,fixture.read_bytes())},data={'start':'First paragraph'})
+            r=self.a.post('/api/essays',files={'file':(fixture.name,fixture.read_bytes())},data={'start':app.paragraphs_from_docx(fixture)[0]})
         self.assertEqual(r.status_code,200)
         job=r.json()['id']
         self.assertEqual(len(self.a.get('/api/essays').json()),1)
@@ -62,16 +62,19 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(self.b.post('/api/essays/'+job+'/retry').status_code,404)
         self.assertEqual(self.a.post('/api/essays/'+job+'/retry').status_code,409)
         folder=self.root/job
-        (folder/'graded.docx').write_bytes(fixture.read_bytes())
+        with patch.object(app, 'call_openai', return_value=''):
+            app.run_job(job, None)
+        self.assertEqual(app.read_meta(folder/'meta.json')['status'], 'succeeded')
         self.assertEqual(self.a.get('/api/essays/'+job+'/download').status_code,200)
         self.assertEqual(self.a.get('/api/essays/'+job+'/preview').status_code,200)
         meta=json.loads((folder/'meta.json').read_text(encoding='utf-8'));meta['status']='failed'
         (folder/'meta.json').write_text(json.dumps(meta),encoding='utf-8')
+        # A completed, charged job cannot be retried just by changing a JSON file.
         with patch.object(app,'run_job') as run:
-            self.assertEqual(self.a.post('/api/essays/'+job+'/retry').status_code,200)
-            run.assert_called_once_with(job,'First paragraph')
+            self.assertEqual(self.a.post('/api/essays/'+job+'/retry').status_code,409)
+            run.assert_not_called()
         actions=[r['action'] for r in self.a.get('/api/activity').json()['items']]
-        self.assertEqual(actions,['retry','preview','download','upload','register'])
+        self.assertEqual(actions,['preview','download','succeeded','upload','register'])
         self.assertEqual([r['action'] for r in self.b.get('/api/activity').json()['items']],['register'])
         with accounts.database() as db:
             for n in range(55):db.execute('INSERT INTO events(user_id,action,detail,created) VALUES(1,?,?,?)',('preview',str(n),time.time()))
@@ -118,6 +121,11 @@ class AccountTests(unittest.TestCase):
             self.assertEqual(self.a.post('/api/essays',files=payload).status_code,429)
         with accounts.database() as db:
             db.execute("UPDATE users SET role='vip' WHERE username=?",(self.credentials['username'],))
+        with patch.object(app,'run_job'):
+            self.assertEqual(self.a.post('/api/essays',files=payload).status_code,429)
+        # Legacy role flags do not constitute a paid subscription.
+        with accounts.database() as db:
+            db.execute('INSERT INTO subscriptions VALUES(?,?,?,?,?,?,?,?,?)', ('pro-test',1,'pro','active',time.time()-10,time.time()+86400,100,None,time.time()))
         with patch.object(app,'run_job'):
             self.assertEqual(self.a.post('/api/essays',files=payload).status_code,200)
 

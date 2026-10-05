@@ -127,11 +127,12 @@ def validate_markdown_fidelity(source: list[str], marked: list[str]) -> None:
         raise ValueError("Original-text reversibility failed: " + " | ".join(details))
 
     for index, block in enumerate(marked):
-        original = source[index]
+        # Full-paragraph reversibility above establishes the exact position of each
+        # marked span. Repeated words/punctuation elsewhere do not make it ambiguous.
         for old in re.findall(r"~~(.*?)~~", block, flags=re.S):
-            if original.count(clean_markdown(old)) != 1:
+            if not clean_markdown(old):
                 raise ValueError(
-                    f"Edit target must occur exactly once in source paragraph {index + 1}: {old!r}"
+                    f"Deleted span must not be empty in source paragraph {index + 1}"
                 )
 
 
@@ -154,6 +155,48 @@ def validate_output_shape(grading_markdown: str) -> None:
             raise ValueError(f"Front-matter grading field is not allowed in output: {line!r}")
 
 
+def validate_complete_report(text: str) -> None:
+    """Require a complete web report before rendering or downloading it."""
+    sections = re.split(r"^#### (.+)\s*$", text, flags=re.M)
+    pairs = list(zip(sections[1::2], sections[2::2]))
+    names = [name.strip() for name, _ in pairs]
+    summary = "全文综合评价和提升建议"
+    if names.count(summary) != 1 or not names or names[-1] != summary:
+        raise ValueError("报告必须以完整的全文综合评价和提升建议结尾")
+    if "原文及红色修改" not in names:
+        raise ValueError("报告缺少原文")
+    for name, content in pairs:
+        if not content.strip():
+            raise ValueError(f"报告栏目不能为空：{name}")
+    starts = [i for i, name in enumerate(names) if name == "原文及红色修改"]
+    for index, start in enumerate(starts):
+        end = starts[index + 1] if index + 1 < len(starts) else names.index(summary)
+        feedback = names[start + 1:end]
+        if feedback not in (["段落点评", "语言提升", "问题建议"], ["格式说明"]):
+            raise ValueError(f"第 {index + 1} 段反馈缺失或顺序不完整")
+    tail = pairs[-1][1]
+    score = re.search(r"本篇文章打分估计为[：:]\s*(\d+(?:\.\d+)?)(?:\s*[–—－~～-]\s*(\d+(?:\.\d+)?))?\s*分", tail)
+    if not score:
+        raise ValueError("文末缺少本篇总分或分数区间")
+    low, high = float(score[1]), float(score[2] or score[1])
+    if not 0 <= low <= high <= 25:
+        raise ValueError("总分必须在 0–25 分以内")
+    if not tail[:score.start()].strip():
+        raise ValueError("报告缺少综合评价正文")
+    rows = [
+        [clean_markdown(cell.strip()) for cell in line.strip().strip("|").split("|")]
+        for line in tail[score.end():].splitlines() if line.strip().startswith("|")
+    ]
+    rows = [row for row in rows if not all(re.fullmatch(r":?-{3,}:?", cell) for cell in row)]
+    expected = [["档次", "内容", "语言", "组织结构"],
+                ["A", "9–10", "9–10", "4–5"], ["B", "7–8", "7–8", "3"],
+                ["C", "5–6", "5–6", "2"], ["D", "3–4", "3–4", "1"],
+                ["E", "0–2", "0–2", "0"]]
+    normalized = [[re.sub(r"\s*[—－-]\s*", "–", cell) for cell in row] for row in rows]
+    if normalized != expected:
+        raise ValueError("文末必须包含统一的 A–E 四列分档参考表")
+
+
 def add_run(
     paragraph: ET.Element,
     text: str,
@@ -171,6 +214,7 @@ def add_run(
         return
     run = ET.SubElement(paragraph, q("r"))
     props = ET.SubElement(run, q("rPr"))
+    ET.SubElement(props, q("rFonts"), {q("ascii"): "Calibri", q("hAnsi"): "Calibri", q("eastAsia"): "Microsoft YaHei"})
     if replacement:
         ET.SubElement(props, q("rStyle"), {q("val"): "ReplacementText"})
     if bold:
@@ -201,8 +245,9 @@ def new_paragraph(body: ET.Element, *, student_original: bool = False) -> ET.Ele
     ET.SubElement(
         props,
         q("spacing"),
-        {q("after"): "120", q("line"): "300", q("lineRule"): "auto"},
+        {q("after"): "160", q("line"): "340", q("lineRule"): "auto"},
     )
+    ET.SubElement(props, q("widowControl"))
     return paragraph
 
 
@@ -210,6 +255,12 @@ def add_plain_paragraph(
     body: ET.Element, text: str, *, color: str = "C00000", bold: bool = False, size: int = 22
 ) -> None:
     paragraph = new_paragraph(body)
+    if bold:
+        props = paragraph.find(q("pPr"))
+        ET.SubElement(props, q("keepNext"))
+        spacing = props.find(q("spacing"))
+        spacing.set(q("before"), "180")
+        spacing.set(q("after"), "60")
     add_run(paragraph, clean_markdown(text), color=color, bold=bold, size=size)
 
 
@@ -248,6 +299,9 @@ def add_table(body: ET.Element, lines: list[str]) -> None:
     table = ET.SubElement(body, q("tbl"))
     table_props = ET.SubElement(table, q("tblPr"))
     ET.SubElement(table_props, q("tblW"), {q("w"): "5000", q("type"): "pct"})
+    margins = ET.SubElement(table_props, q("tblCellMar"))
+    for side in ("top", "left", "bottom", "right"):
+        ET.SubElement(margins, q(side), {q("w"): "100", q("type"): "dxa"})
     borders = ET.SubElement(table_props, q("tblBorders"))
     for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
         ET.SubElement(
@@ -257,9 +311,21 @@ def add_table(body: ET.Element, lines: list[str]) -> None:
         )
     for row_index, cells in enumerate(rows):
         row = ET.SubElement(table, q("tr"))
+        row_props = ET.SubElement(row, q("trPr"))
+        ET.SubElement(row_props, q("cantSplit"))
+        if row_index == 0:
+            ET.SubElement(row_props, q("tblHeader"))
         for cell in cells:
             tc = ET.SubElement(row, q("tc"))
+            cell_props = ET.SubElement(tc, q("tcPr"))
+            ET.SubElement(cell_props, q("tcW"), {q("w"): str(5000 // len(cells)), q("type"): "pct"})
+            if row_index == 0:
+                ET.SubElement(cell_props, q("shd"), {q("fill"): "F1F4F7", q("val"): "clear"})
             paragraph = new_paragraph(tc)
+            props = paragraph.find(q("pPr"))
+            ET.SubElement(props, q("jc"), {q("val"): "center"})
+            if row_index < len(rows) - 1:
+                ET.SubElement(props, q("keepNext"))
             cursor = 0
             pattern = re.compile(r"\[\[red\]\](.*?)\[\[/red\]\]")
             for match in pattern.finditer(cell):

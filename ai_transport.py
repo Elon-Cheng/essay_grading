@@ -34,6 +34,17 @@ def connection_options(config=None):
 
 
 def request_response(url, key, body):
+    # A connection handshake failure has not submitted the request. Never retry
+    # read/write/protocol failures, which may already have incurred a charge.
+    for attempt in range(2):
+        try:
+            return _request_response(url, key, body)
+        except (httpx.ConnectError, httpx.ConnectTimeout):
+            if attempt:raise
+            time.sleep(1)
+
+
+def _request_response(url, key, body):
     effort = os.getenv('AI_REASONING_EFFORT', '')
     if effort:
         if effort not in ('none', 'low', 'medium', 'high', 'xhigh'):
@@ -53,12 +64,32 @@ def request_response(url, key, body):
         with client.stream('POST', url, headers={'Authorization': 'Bearer ' + key},
                            json={**body, 'stream': True}) as response:
             if response.status_code >= 400:
+                # Preserve explicit parameter rejection for safe schema negotiation.
+                # Interrupted/ambiguous upstream requests are still never retried.
+                raw = bytearray()
+                for chunk in response.iter_bytes():
+                    raw.extend(chunk)
+                    if len(raw) > limit:
+                        raw.clear()
+                        break
+                try:
+                    error_data = json.loads(raw)
+                except (ValueError, UnicodeError):
+                    error_data = {}
                 return httpx.Response(response.status_code, headers=response.headers,
-                                      json={}, request=response.request)
+                                      json=error_data, request=response.request)
             if 'text/event-stream' not in response.headers.get('content-type', ''):
                 raise StreamFailure('stream_content_type', response)
             event_lines, total = [], 0
-            for line in response.iter_lines():
+            progress = {}
+            def lines():
+                try:
+                    yield from response.iter_lines()
+                except httpx.TransportError as exc:
+                    raise StreamFailure(type(exc).__name__, response, progress) from None
+                # Some proxies close immediately after the final data line.
+                yield ''
+            for line in lines():
                 if time.monotonic() > deadline:
                     raise httpx.ReadTimeout('AI total deadline exceeded', request=response.request)
                 total += len(line.encode('utf-8'))
@@ -72,6 +103,10 @@ def request_response(url, key, body):
                     if payload == '[DONE]':
                         break
                     event = json.loads(payload)
+                    if event.get('type') == 'response.created':
+                        progress.update(event.get('response') or {})
+                    if event.get('type') == 'response.output_text.delta':
+                        progress['output_text'] = progress.get('output_text','') + event.get('delta','')
                     if event.get('type') == 'response.completed':
                         data = event['response']
                         if data.get('status') != 'completed':
@@ -87,4 +122,4 @@ def request_response(url, key, body):
                                  'invalid_request_error', 'insufficient_quota'}
                         reason = event['type'] + (':' + code if code in known else '')
                         raise StreamFailure(reason, response, data)
-            raise StreamFailure('stream_no_completion', response)
+            raise StreamFailure('stream_no_completion', response, progress)

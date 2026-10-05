@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $siteRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 Set-Location -LiteralPath $siteRoot
-foreach ($line in Get-Content -LiteralPath (Join-Path $siteRoot '.env')) {
+foreach ($line in Get-Content -LiteralPath (Join-Path $siteRoot '.env') -Encoding UTF8) {
     if ($line.Trim() -and -not $line.Trim().StartsWith('#')) {
         $pair = $line.Split('=', 2)
         if ($pair.Count -ne 2) { throw 'Invalid environment setting' }

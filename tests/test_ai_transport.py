@@ -46,14 +46,14 @@ class TransportTests(unittest.TestCase):
         self.assertFalse(post.call_args.kwargs['trust_env'])
         self.assertEqual(post.call_count, 1)
 
-    def test_explicit_proxy_applies_to_stream_and_does_not_retry_failure(self):
+    def test_explicit_proxy_applies_to_stream_and_retries_handshake_once(self):
         with patch.dict(os.environ, {'AI_STREAM': '1', 'AI_PROXY_URL': 'http://127.0.0.1:1080'}), \
                 patch.object(ai_transport.httpx, 'Client', side_effect=httpx.ConnectError('offline')) as client:
             with self.assertRaises(httpx.ConnectError):
                 ai_transport.request_response('https://example.com/v1/responses', 'test', {})
         self.assertEqual(client.call_args.kwargs['proxy'], 'http://127.0.0.1:1080')
         self.assertFalse(client.call_args.kwargs['trust_env'])
-        self.assertEqual(client.call_count, 1)
+        self.assertEqual(client.call_count, 2)
 
     def test_invalid_proxy_fails_without_exposing_credentials(self):
         with patch.dict(os.environ, {'AI_PROXY_URL': 'socks5://user:private@localhost:1080'}):
@@ -78,6 +78,39 @@ class TransportTests(unittest.TestCase):
         response = self.request(('data: ' + json.dumps({'type': 'response.completed', 'response': data}) + '\n\n').encode())
         self.assertEqual(response.json(), data)
         self.assertEqual(response.headers['x-request-id'], 'test-id')
+
+    def test_stream_parameter_rejection_keeps_json_for_schema_negotiation(self):
+        error = {'error': {'param': 'text.format', 'code': 'unsupported_parameter'}}
+        real_client = httpx.Client
+        transport = httpx.MockTransport(lambda request: httpx.Response(400, json=error))
+        with patch.dict(os.environ, {'AI_STREAM': '1'}), patch.object(ai_transport.httpx, 'Client',
+                side_effect=lambda **kw: real_client(transport=transport, **kw)):
+            response = ai_transport.request_response('https://example.com/v1/responses', 'test', {})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), error)
+
+    def test_completed_event_without_trailing_blank_line(self):
+        data={'status':'completed','output_text':'OK','usage':{'output_tokens':1}}
+        response=self.request(('data: '+json.dumps({'type':'response.completed','response':data})).encode())
+        self.assertEqual(response.json(),data)
+
+    def test_partial_protocol_failure_keeps_progress_without_resubmitting(self):
+        class BrokenStream(httpx.SyncByteStream):
+            def __iter__(self):
+                yield b'data: {"type":"response.created","response":{"id":"resp_test","status":"in_progress"}}\n\n'
+                yield b'data: {"type":"response.output_text.delta","delta":"partial"}\n\n'
+                raise httpx.RemoteProtocolError('connection lost')
+        requests=[];real_client=httpx.Client
+        def handler(request):
+            requests.append(request)
+            return httpx.Response(200,headers={'content-type':'text/event-stream'},stream=BrokenStream())
+        with patch.dict(os.environ,{'AI_STREAM':'1'}),patch.object(ai_transport.httpx,'Client',side_effect=lambda **kw:real_client(transport=httpx.MockTransport(handler),**kw)):
+            with self.assertRaises(ai_transport.StreamFailure) as caught:
+                ai_transport.request_response('https://example.com/v1/responses','test',{})
+        self.assertEqual(len(requests),1)
+        self.assertEqual(caught.exception.data['id'],'resp_test')
+        self.assertEqual(caught.exception.data['output_text'],'partial')
+        self.assertEqual(caught.exception.reason,'RemoteProtocolError')
 
     def test_partial_stream_is_rejected(self):
         with self.assertRaises(ValueError):
