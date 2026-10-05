@@ -18,11 +18,11 @@ from fastapi.testclient import TestClient
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-import accounts
-import app
-import payments
-import saas
-import worker
+from backend import accounts
+from backend import app
+from backend import payments
+from backend import saas
+from backend import worker
 
 
 class SaaSTests(unittest.TestCase):
@@ -139,7 +139,7 @@ class SaaSTests(unittest.TestCase):
         with patch.object(app,'call_openai',return_value=''):self.assertTrue(worker.tick())
         self.assertEqual(self.client.get('/api/essays/'+ident).json()['status'],'succeeded')
         ident=self.submit().json()['id']
-        with patch.object(app,'call_openai',return_value=app.mock_grading(app.paragraphs_from_docx(self.fixture))),patch('app.subprocess.run',side_effect=RuntimeError('render failed')):app.run_job(ident,None)
+        with patch.object(app,'call_openai',return_value=app.mock_grading(app.paragraphs_from_docx(self.fixture))),patch('backend.app.subprocess.run',side_effect=RuntimeError('render failed')):app.run_job(ident,None)
         self.assertEqual(self.client.post(f'/api/essays/{ident}/retry').status_code,200)
         with patch.object(app,'call_openai') as call:app.run_job(ident,None)
         call.assert_not_called()
@@ -231,7 +231,7 @@ class SaaSTests(unittest.TestCase):
     def test_order_creation_idempotence_and_owner_isolation(self):
         os.environ['PRO_PRICE_FEN']='2900'
         key=uuid.uuid4().hex
-        with patch('payments.configured',return_value=True),patch('payments.precreate',return_value='weixin://test') as pre:
+        with patch('backend.payments.configured',return_value=True),patch('backend.payments.precreate',return_value='weixin://test') as pre:
             first=self.client.post('/api/orders',json={'channel':'wechat'},headers={'Idempotency-Key':key})
             second=self.client.post('/api/orders',json={'channel':'wechat'},headers={'Idempotency-Key':key})
         self.assertEqual(first.json()['id'],second.json()['id']);pre.assert_called_once()
@@ -243,13 +243,13 @@ class SaaSTests(unittest.TestCase):
 
     def test_refund_idempotence_and_revoke_entitlement(self):
         self.admin();ident=self.order();payments.apply_trade('wechat',self.trade(ident),'paid','hash')
-        with patch('payments.process_refund') as process:
+        with patch('backend.payments.process_refund') as process:
             first=self.client.post('/api/admin/orders/'+ident+'/refund',json={'reason':'测试订单退款'})
             second=self.client.post('/api/admin/orders/'+ident+'/refund',json={'reason':'测试重复退款'})
             process.assert_called_once()
         self.assertEqual(first.json()['id'],second.json()['id'])
         self.assertEqual(self.client.get('/api/subscription').json()['plan'],'free')
-        with patch('payments.wechat_request',return_value={'status':'SUCCESS','refund_id':'wx-refund'}):payments.process_refund(first.json())
+        with patch('backend.payments.wechat_request',return_value={'status':'SUCCESS','refund_id':'wx-refund'}):payments.process_refund(first.json())
         with accounts.database() as db:self.assertEqual(db.execute('SELECT status FROM orders WHERE id=?',(ident,)).fetchone()[0],'refunded')
 
     def test_ai_usage_pricing_and_unknown_not_zero(self):
@@ -325,12 +325,12 @@ class SaaSTests(unittest.TestCase):
         ident=self.order('alipay')
         with accounts.database() as db:order=db.execute('SELECT * FROM orders WHERE id=?',(ident,)).fetchone()
         response={'out_trade_no':ident,'trade_no':'alipay-query','trade_status':'TRADE_SUCCESS','total_amount':'29.00'}
-        with patch('payments.alipay_request',return_value=response):payments.query_order(order)
+        with patch('backend.payments.alipay_request',return_value=response):payments.query_order(order)
         self.assertEqual(self.client.get('/api/subscription').json()['plan'],'pro')
 
     def test_payment_precreate_timeout_keeps_order_for_reconciliation(self):
         os.environ['PRO_PRICE_FEN']='2900'
-        with patch('payments.configured',return_value=True),patch('payments.precreate',side_effect=httpx.ReadTimeout('timeout')):
+        with patch('backend.payments.configured',return_value=True),patch('backend.payments.precreate',side_effect=httpx.ReadTimeout('timeout')):
             response=self.client.post('/api/orders',json={'channel':'wechat'},headers={'Idempotency-Key':uuid.uuid4().hex})
         self.assertEqual(response.json()['status'],'creating')
         self.assertIsNone(response.json()['code_url'])
@@ -341,10 +341,10 @@ class SaaSTests(unittest.TestCase):
 
     def test_wechat_refund_query_verifies_amount_and_final_state(self):
         self.admin();ident=self.order();payments.apply_trade('wechat',self.trade(ident),'paid','hash')
-        with patch('payments.process_refund'):
+        with patch('backend.payments.process_refund'):
             refund=self.client.post('/api/admin/orders/'+ident+'/refund',json={'reason':'测试退款完成查询'}).json()
         response={'out_trade_no':ident,'out_refund_no':refund['id'],'amount':{'refund':2900},'status':'SUCCESS'}
-        with patch('payments.wechat_request',return_value=response):payments.query_refund(refund)
+        with patch('backend.payments.wechat_request',return_value=response):payments.query_refund(refund)
         with accounts.database() as db:self.assertEqual(db.execute('SELECT status FROM refunds').fetchone()[0],'succeeded')
 
     def test_legacy_completed_jobs_migrate_usage_once(self):

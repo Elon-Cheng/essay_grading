@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from review_annotations import MARKER, normalize_annotations, parse_annotations, report_sections, split_response, EVALUATION_HEADINGS, LEXICAL_HEADINGS, GRAMMAR_HEADINGS, COHESION_HEADINGS, TASK_RESPONSE_HEADINGS, COMPREHENSIVE_HEADINGS, validate_evaluation
+from backend.review_annotations import MARKER, normalize_annotations, parse_annotations, report_sections, split_response, EVALUATION_HEADINGS, LEXICAL_HEADINGS, GRAMMAR_HEADINGS, COHESION_HEADINGS, TASK_RESPONSE_HEADINGS, COMPREHENSIVE_HEADINGS, validate_evaluation
 
 
 class ReviewAnnotationTests(unittest.TestCase):

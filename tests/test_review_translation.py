@@ -6,8 +6,8 @@ from pathlib import Path
 from unittest.mock import patch
 from fastapi import HTTPException
 import httpx
-import app
-import review_translation as translation
+from backend import app
+from backend import review_translation as translation
 
 
 class ReviewTranslationTests(unittest.TestCase):

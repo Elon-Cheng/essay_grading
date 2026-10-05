@@ -5,11 +5,11 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import Mock, patch
 from fastapi.testclient import TestClient
-import accounts
-import app
-import paypro_payments
-import credit_payments
-import saas
+from backend import accounts
+from backend import app
+from backend import paypro_payments
+from backend import credit_payments
+from backend import saas
 from tests.test_saas import SaaSTests
 
 

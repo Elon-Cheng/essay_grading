@@ -3,10 +3,10 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 ESSAY_DATA_DIR=/app/data
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-COPY *.py SKILL.md ./
-COPY references ./references
+COPY app.py worker.py ./
+COPY backend ./backend
 COPY scripts ./scripts
-COPY static ./static
+COPY frontend ./frontend
 RUN useradd --create-home appuser && mkdir -p /app/data && chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8000

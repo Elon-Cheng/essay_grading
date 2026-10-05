@@ -12,10 +12,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-import app
-from grading_contract import EVALUATION_FIELDS, parse_report, render_report
-from report_normalization import normalize_report
-from review_annotations import report_sections
+from backend import app
+from backend.grading_contract import EVALUATION_FIELDS, parse_report, render_report
+from backend.report_normalization import normalize_report
+from backend.review_annotations import report_sections
 
 
 def extract_data(text):
@@ -79,7 +79,7 @@ def main():
                        'channels': {'annotations': 'ready', 'report': 'ready'},
                        'prompt': '', 'translations': {'en': {}, 'zh': {}}}
             (target / 'preview.json').write_text(json.dumps(preview, ensure_ascii=False), encoding='utf-8')
-            subprocess.run([sys.executable, str(ROOT / 'scripts/render_grading_docx.py'),
+            subprocess.run([sys.executable, str(ROOT / 'backend/documents.py'),
                             '--source-docx', str(args.input / 'original.docx'),
                             '--source-md', str(args.input / 'source.md'),
                             '--grading-md', str(target / 'grading.md'),

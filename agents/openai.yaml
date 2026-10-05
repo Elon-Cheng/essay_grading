@@ -1,4 +1,0 @@
-interface:
-  display_name: 上海高考英语作文评分批改
-  short_description: DOCX原文批改、25分制评分与提分建议
-  default_prompt: 请读取用户提供的 DOCX 作文，依次生成原文 Markdown、批改 Markdown 和最终 DOCX；按 Content 10分、Language 10分、Organization 5分评分。完整保留原文段落，在原文中使用红色删除线、红色下划线和红色中文批注。严格区分有规则依据的错误和可选优化；整句替换需拆解关键词义、指代与搭配问题；新增内容只作可选示例。正文每段给出针对性的段落点评和四字段语言提升，称呼与署名简短批注。完成输入 DOCX/原文 Markdown、原文可逆及批改 Markdown/最终 DOCX 一致性校验。不生成完整修改稿。

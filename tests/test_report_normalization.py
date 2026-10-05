@@ -1,11 +1,11 @@
 import unittest
 import re
-from report_normalization import normalize_report
-from review_annotations import EVALUATION_HEADINGS, validate_evaluation
-from review_translation import validate_english_feedback
-from scripts.render_grading_docx import marked_paragraphs, validate_markdown_fidelity, validate_complete_report
-from review_annotations import report_sections
-import app
+from backend.report_normalization import normalize_report
+from backend.review_annotations import EVALUATION_HEADINGS, validate_evaluation
+from backend.review_translation import validate_english_feedback
+from backend.documents import marked_paragraphs, validate_markdown_fidelity, validate_complete_report
+from backend.review_annotations import report_sections
+from backend import app
 
 class NormalizationTests(unittest.TestCase):
     def test_aliases_only_normalize_summary_headings(self):

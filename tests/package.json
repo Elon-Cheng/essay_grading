@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "description": "Frontend DOM regression tests only",
+  "scripts": {
+    "test": "node run_frontend.cjs"
+  },
+  "devDependencies": {
+    "linkedom": "^0.18.12"
+  }
+}

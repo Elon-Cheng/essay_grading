@@ -5,9 +5,9 @@ const vm = require('node:vm');
 const path = require('node:path');
 const {parseHTML} = require('linkedom');
 const root = path.resolve(__dirname, '..');
-const {document} = parseHTML(fs.readFileSync(path.join(root, 'static/index.html'), 'utf8'));
+const {document} = parseHTML(fs.readFileSync(path.join(root, 'frontend/index.html'), 'utf8'));
 const context = vm.createContext({document});
-vm.runInContext(fs.readFileSync(path.join(root, 'static/annotations.js'), 'utf8') + '\nglobalThis.review = EssayReview;', context);
+vm.runInContext(fs.readFileSync(path.join(root, 'frontend/annotations.js'), 'utf8') + '\nglobalThis.review = EssayReview;', context);
 const render = preview => context.review.render(preview, text => `<p>${text}</p>`);
 const annotation = {paragraph:2, start:0, end:6, quote:'He go.', level:'sentence',
   kind:'error', correction:'He goes.', comment:'独立解释 <script>bad()</script>', id:'P2.1'};
@@ -100,7 +100,7 @@ assert.equal(JSON.stringify(taskPreview), originalSnapshot);
 console.log('Annotation independence and comprehensive evaluation DOM checks passed.');
 
 // Use production Markdown rendering to verify component and total-only colors.
-const appSource = fs.readFileSync(path.join(root, 'static/app.js'), 'utf8');
+const appSource = fs.readFileSync(path.join(root, 'frontend/app.js'), 'utf8');
 context.esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 vm.runInContext(appSource.slice(appSource.indexOf('function inline('),appSource.indexOf('function reviewReport(')),context);
 const table = '| 档次 | 内容 | 语言 | 组织结构 |\n|---|---|---|---|\n| A | 9–10 | 9–10 | [[red]]4–5[[/red]] |\n| B | [[red]]7–8[[/red]] | [[red]]7–8[[/red]] | 3 |\n| C | 5–6 | 5–6 | 2 |\n| D | 3–4 | 3–4 | 1 |\n| E | 0–2 | 0–2 | 0 |';

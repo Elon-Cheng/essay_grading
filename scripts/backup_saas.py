@@ -19,7 +19,7 @@ from urllib.parse import urlsplit, unquote
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from dotenv import load_dotenv
 load_dotenv()
-import accounts
+from backend import accounts
 
 
 def backup(target):

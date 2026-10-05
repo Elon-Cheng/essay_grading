@@ -5,8 +5,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from fastapi.testclient import TestClient
-import accounts
-import app
+from backend import accounts
+from backend import app
 
 class AccountTests(unittest.TestCase):
     def setUp(self):

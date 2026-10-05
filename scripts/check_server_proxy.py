@@ -55,7 +55,7 @@ def main():
         parser.error('count=1..120, interval=0..30, port=1..65535')
     config = {**dotenv_values(args.root / '.env'), **os.environ}
     sys.path.insert(0, str(ROOT))
-    from ai_transport import connection_options
+    from backend.ai_transport import connection_options
     # Only these routing options are used; never load or send the API key.
     try:
         configured = connection_options(config)

@@ -3,9 +3,9 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
-import worker
-import saas
-import accounts
+from backend import worker
+from backend import saas
+from backend import accounts
 from tests.test_saas import SaaSTests as _SaaSFixture
 
 

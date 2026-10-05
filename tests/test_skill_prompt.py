@@ -1,9 +1,9 @@
 import tempfile
 import unittest
 from pathlib import Path
-from skill_prompt import build_grading_prompt, prompt_files
+from backend.skill_prompt import build_grading_prompt, prompt_files
 
-ROOT=Path(__file__).resolve().parent.parent
+ROOT=Path(__file__).resolve().parent.parent / "backend"
 
 class SkillPromptTests(unittest.TestCase):
     def test_channels_load_shared_and_specific_rules(self):

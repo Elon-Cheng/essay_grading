@@ -5,3 +5,8 @@ tests
 __pycache__
 .venv
 *.pyc
+input
+output
+outcome
+logs
+tests/node_modules

@@ -10,8 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from review_annotations import parse_annotations
-from scripts.render_grading_docx import source_paragraphs
+from backend.review_annotations import parse_annotations
+from backend.documents import source_paragraphs
 
 
 def recover(root, job_id, apply=False):

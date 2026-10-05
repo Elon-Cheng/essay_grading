@@ -1,10 +1,10 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const {parseHTML}=require('linkedom');
-const {document}=parseHTML(fs.readFileSync('static/index.html','utf8'));
+const {document}=parseHTML(fs.readFileSync('frontend/index.html','utf8'));
 const context=vm.createContext({document});
-vm.runInContext(fs.readFileSync('static/annotations.js','utf8')+'\nglobalThis.review=EssayReview;',context);
-vm.runInContext(fs.readFileSync('static/review-language.js','utf8')+'\nglobalThis.language=ReviewLanguage;',context);
-const preview=JSON.parse(fs.readFileSync('output/frontend-contract-preview.json','utf8'));
+vm.runInContext(fs.readFileSync('frontend/annotations.js','utf8')+'\nglobalThis.review=EssayReview;',context);
+vm.runInContext(fs.readFileSync('frontend/review-language.js','utf8')+'\nglobalThis.language=ReviewLanguage;',context);
+const preview=JSON.parse(fs.readFileSync('tests/fixtures/frontend-contract-preview.json','utf8'));
 const snapshot=JSON.stringify(preview),render=p=>context.review.render(p,t=>'<p>'+t+'</p>');
 (async()=>{
   await context.language.show('contract',preview,render,()=>{throw Error('No translation request permitted');});

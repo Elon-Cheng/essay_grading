@@ -8,8 +8,8 @@ from unittest.mock import patch
 from urllib.parse import unquote
 
 from fastapi.testclient import TestClient
-import app
-import accounts
+from backend import app
+from backend import accounts
 
 
 class CompleteReportTests(unittest.TestCase):

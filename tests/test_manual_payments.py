@@ -9,9 +9,9 @@ from unittest.mock import patch
 from PIL import Image
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
-import accounts
-import app
-import payments
+from backend import accounts
+from backend import app
+from backend import payments
 import test_saas
 
 
@@ -97,7 +97,7 @@ class ManualPaymentTests(unittest.TestCase):
         self.assertEqual(replay['amount_fen'],2900)
         self.assertEqual(replay['code_url'],order['code_url'])
         self.assertEqual(self.client.get('/api/orders/'+order['id']+'/qr').status_code,200)
-        with patch('payments.query_order') as query:
+        with patch('backend.payments.query_order') as query:
             self.client.post('/api/orders/'+order['id']+'/refresh')
             payments.reconcile()
             query.assert_not_called()
@@ -174,7 +174,7 @@ class ManualPaymentTests(unittest.TestCase):
         for _ in range(2):self.assertEqual(self.admin.post('/api/admin/orders/'+ident+'/manual-refund',json=data).status_code,200)
         self.assertEqual(self.client.get('/api/subscription').json()['plan'],'free')
         self.assertEqual(self.client.get('/api/orders/'+ident).json()['status'],'refunded')
-        with patch('payments.process_refund') as process:
+        with patch('backend.payments.process_refund') as process:
             payments.reconcile();process.assert_not_called()
         second=self.order()['id'];self.proof(second);self.approve(second,transaction='second-real-receipt')
         self.assertEqual(self.admin.post('/api/admin/orders/'+second+'/manual-refund',json=data).status_code,409)

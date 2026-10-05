@@ -1,6 +1,6 @@
 import unittest
-from grading_protocol import repair_paragraph
-from scripts.render_grading_docx import recover_original, validate_markdown_fidelity
+from backend.grading_protocol import repair_paragraph
+from backend.documents import recover_original, validate_markdown_fidelity
 
 
 class ProtocolTests(unittest.TestCase):

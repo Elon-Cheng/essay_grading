@@ -1,8 +1,8 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),vm=require('node:vm'),{parseHTML}=require('linkedom');
-const {document}=parseHTML(fs.readFileSync('static/index.html','utf8'));
+const {document}=parseHTML(fs.readFileSync('frontend/index.html','utf8'));
 const context=vm.createContext({document});
-vm.runInContext(fs.readFileSync('static/review-language.js','utf8')+'\nglobalThis.controller=ReviewLanguage;',context);
+vm.runInContext(fs.readFileSync('frontend/review-language.js','utf8')+'\nglobalThis.controller=ReviewLanguage;',context);
 const english={original:['He go.'],translations:{en:{},zh:{'Use goes with He.':'He 作主语时用 goes。','A concise phrase.':'简洁的表达。','The purpose is clear.':'写作目的清晰。'}},annotations:[{id:'P1.1',quote:'He go.',correction:'He goes.',comment:'Use goes with He.'},{id:'P1.2',comment:'A concise phrase.'}],review:{paragraphs:[{paragraph:1,feedback:[{title:'段落点评',text:'The purpose is clear.'}]}],overall:'本篇文章打分估计为：18–19分',evaluation:{version:3,blocks:[{title:'综合评价',comprehensive_sections:[{title:'Strengths',text:'The purpose is clear.'}]}]}}};
 (async()=>{
   let rendered,calls=0;

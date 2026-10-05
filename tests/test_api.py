@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 import httpx
-import app
+from backend import app
 
 
 class GradingApiTests(unittest.TestCase):
@@ -100,7 +100,7 @@ class GradingApiTests(unittest.TestCase):
     def test_annotation_data_does_not_enter_word_report(self):
         import tempfile
         from pathlib import Path
-        from review_annotations import MARKER
+        from backend.review_annotations import MARKER
         grading = app.mock_grading(['Essay'])
         annotation = dict(paragraph=1, level='sentence', quote='Essay', kind='good-point', comment='明确表达')
         response = self.response(200, {'output_text': grading.rstrip() + MARKER + json.dumps([annotation])})
@@ -158,7 +158,7 @@ class GradingApiTests(unittest.TestCase):
                 self.assertEqual(json.loads((folder / 'annotations.json').read_text()), [])
                 meta = json.loads((folder / 'meta.json').read_text(encoding='utf-8'))
                 self.assertEqual(meta['channels'], {'annotations':'ready', 'report':'failed'})
-                with patch.object(app, 'call_openai', return_value=app.mock_grading(['Essay'])) as call, patch('app.subprocess.run'):
+                with patch.object(app, 'call_openai', return_value=app.mock_grading(['Essay'])) as call, patch('backend.app.subprocess.run'):
                     app.run_job('independent-test', None)
                 call.assert_called_once_with('## Essay\n\nEssay\n')
 
@@ -169,14 +169,14 @@ class GradingApiTests(unittest.TestCase):
             folder.mkdir()
             (folder / 'meta.json').write_text(json.dumps({'id':'independent-test', 'status':'queued'}), encoding='utf-8')
             (folder / 'source.md').write_text('## Essay\n\nEssay\n', encoding='utf-8')
-            with patch.object(app, 'DATA', root), patch.object(app, 'write_source_md', return_value=['Essay']), patch.object(app, 'call_openai', side_effect=[RuntimeError('annotations failed'), app.mock_grading(['Essay'])]), patch('app.subprocess.run'):
+            with patch.object(app, 'DATA', root), patch.object(app, 'write_source_md', return_value=['Essay']), patch.object(app, 'call_openai', side_effect=[RuntimeError('annotations failed'), app.mock_grading(['Essay'])]), patch('backend.app.subprocess.run'):
                 app.run_job('independent-test', None)
             meta = json.loads((folder / 'meta.json').read_text(encoding='utf-8'))
             self.assertEqual(meta['status'], 'succeeded')
             self.assertEqual(meta['channels'], {'annotations':'failed', 'report':'ready', 'translation':'ready'})
             self.assertNotIn('error', meta)
             self.assertTrue((folder / 'grading.md').exists())
-            with patch.object(app, 'DATA', root), patch.object(app, 'write_source_md', return_value=['Essay']), patch.object(app, 'call_openai', return_value=[]) as call, patch('app.subprocess.run'):
+            with patch.object(app, 'DATA', root), patch.object(app, 'write_source_md', return_value=['Essay']), patch.object(app, 'call_openai', return_value=[]) as call, patch('backend.app.subprocess.run'):
                 app.run_job('independent-test', None)
             call.assert_called_once_with('## Essay\n\nEssay\n', channel='annotations')
             meta = json.loads((folder / 'meta.json').read_text(encoding='utf-8'))
@@ -191,7 +191,7 @@ class GradingApiTests(unittest.TestCase):
             (folder/'annotations.json').write_text('[]',encoding='utf-8')
             valid=app.mock_grading(['Essay'])
             (folder/'grading.md').write_text(valid.replace('[[red]]4–5[[/red]]','4–5'),encoding='utf-8')
-            with patch.object(app,'DATA',root),patch.object(app,'write_source_md',return_value=['Essay']),patch.object(app,'call_openai',return_value=valid) as call,patch('app.subprocess.run'):
+            with patch.object(app,'DATA',root),patch.object(app,'write_source_md',return_value=['Essay']),patch.object(app,'call_openai',return_value=valid) as call,patch('backend.app.subprocess.run'):
                 app.run_job('invalid-cache',None)
             call.assert_called_once_with('## Essay\n\nEssay\n')
             app.validate_report((folder/'grading.md').read_text(encoding='utf-8'),['Essay'])
@@ -279,7 +279,7 @@ class GradingApiTests(unittest.TestCase):
             (folder / 'meta.json').write_text(json.dumps({'id': 'render-test', 'status': 'queued'}), encoding='utf-8')
             (folder / 'source.md').write_text('## Essay\n\nEssay\n', encoding='utf-8')
             error = subprocess.CalledProcessError(1, ['python', '/private/server/path'], stderr='Reversibility failed')
-            with patch.object(app, 'DATA', root), patch.object(app, 'write_source_md', return_value=['Essay']), patch.object(app, 'call_openai', return_value=app.mock_grading(['Essay'])), patch('app.subprocess.run', side_effect=error), self.assertLogs(app.logger, level='ERROR') as logs:
+            with patch.object(app, 'DATA', root), patch.object(app, 'write_source_md', return_value=['Essay']), patch.object(app, 'call_openai', return_value=app.mock_grading(['Essay'])), patch('backend.app.subprocess.run', side_effect=error), self.assertLogs(app.logger, level='ERROR') as logs:
                 app.run_job('render-test', None)
             result = json.loads((folder / 'meta.json').read_text(encoding='utf-8'))
             self.assertEqual(result['status'], 'failed')

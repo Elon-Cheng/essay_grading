@@ -5,7 +5,7 @@ import threading
 import unittest
 from unittest.mock import patch
 import httpx
-import ai_transport
+from backend import ai_transport
 
 
 class TransportTests(unittest.TestCase):

@@ -8,10 +8,10 @@ from unittest.mock import patch
 
 import httpx
 
-import accounts
-import app
-from grading_contract import EVALUATION_FIELDS, output_schema, parse_report, render_report, schema_unsupported
-from review_annotations import parse_annotations, report_sections
+from backend import accounts
+from backend import app
+from backend.grading_contract import EVALUATION_FIELDS, output_schema, parse_report, render_report, schema_unsupported
+from backend.review_annotations import parse_annotations, report_sections
 
 
 def report_data(paragraphs):
@@ -140,7 +140,7 @@ class ContractTests(unittest.TestCase):
             return httpx.Response(200, json={'output_text': json.dumps(report_data(source))},
                                   request=httpx.Request('POST', url))
         with patch.dict(os.environ, {'OPENAI_API_KEY': 'test', 'AI_STRUCTURED_OUTPUT': 'auto'}), \
-                patch('ai_transport.request_response', side_effect=request), \
+                patch('backend.ai_transport.request_response', side_effect=request), \
                 patch.object(app.saas, 'start_call', return_value='test-call'), \
                 patch.object(app.saas, 'finish_call'):
             text = app.call_openai('Essay.')
@@ -165,7 +165,7 @@ class ContractTests(unittest.TestCase):
                                            'AI_STRUCTURED_OUTPUT': '1'}), \
                     patch.object(app.review_translation, 'prepare_translations', return_value={}):
                 accounts.initialize()
-                with patch('ai_transport.request_response', side_effect=responses) as request:
+                with patch('backend.ai_transport.request_response', side_effect=responses) as request:
                     app.run_job(folder.name, None)
                 meta = app.read_meta(folder / 'meta.json')
                 self.assertEqual(meta['status'], 'succeeded', meta.get('error'))
@@ -190,7 +190,7 @@ class ContractTests(unittest.TestCase):
                     comment='Synthetic correction used only to verify cached rendering.',
                     correction=quote + 's')]}), source)
                 app.write_meta(folder / 'annotations.json', recovered)
-                with patch('ai_transport.request_response') as request:
+                with patch('backend.ai_transport.request_response') as request:
                     app.run_job(folder.name, None)
                 request.assert_not_called()
                 self.assertEqual(app.read_meta(folder / 'meta.json')['status'], 'succeeded')

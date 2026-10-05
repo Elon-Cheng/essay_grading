@@ -1,10 +1,10 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const {parseHTML}=require('linkedom');
-const {document}=parseHTML(fs.readFileSync('static/credit-payment.html','utf8'));
+const {document}=parseHTML(fs.readFileSync('frontend/credit-payment.html','utf8'));
 let poll,cleared=false,requests=[];
 let order={orderNo:'ESSAYTEST',productName:'基础套餐',essayCredits:5,paymentMethod:'wechat',amount:9.9,status:'PENDING',payNum:'98765',expiresAt:Date.now()/1000+900,qrCodeUrl:'https://pay.example.com/qr.png',paymentUrl:'https://pay.example.com/pay',error:null};
 const context=vm.createContext({document,location:{pathname:'/payment/ESSAYTEST'},setInterval:fn=>(poll=fn,1),clearInterval:()=>cleared=true,addEventListener:()=>{},fetch:async(url,options)=>{requests.push([url,options]);return {ok:true,status:200,json:async()=>structuredClone(order)};}});
-vm.runInContext(fs.readFileSync('static/credit-payments.js','utf8'),context);
+vm.runInContext(fs.readFileSync('frontend/credit-payments.js','utf8'),context);
 (async()=>{
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(document.querySelector('#credit-qr').hidden,false);

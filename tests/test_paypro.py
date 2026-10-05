@@ -3,8 +3,8 @@ import uuid
 import unittest
 from unittest.mock import patch, Mock
 
-import accounts
-import paypro_payments as paypro
+from backend import accounts
+from backend import paypro_payments as paypro
 from tests.test_saas import SaaSTests
 
 
