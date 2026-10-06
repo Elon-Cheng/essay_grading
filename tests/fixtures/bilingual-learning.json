@@ -1,0 +1,66 @@
+{
+  "high_score_vocabulary": [
+    {
+      "paragraph": 1,
+      "source_sentence": "More and more people try to discover various destinations.",
+      "sentence_occurrence": 1,
+      "original": "discover",
+      "replacement": "explore",
+      "word_occurrence": 1,
+      "minimal_sentence": "More and more people try to explore various destinations.",
+      "example_sentence": "Travellers can explore coastal towns and learn about local food traditions.",
+      "reason": "The writer means visiting and learning about places, rather than finding unknown destinations. Explore expresses active engagement more precisely.",
+      "collocations": [
+        "explore possibilities",
+        "explore a concept",
+        "explore options"
+      ],
+      "original_zh": "发现",
+      "replacement_zh": "探索",
+      "source_sentence_zh": "越来越多的人尝试发现各种目的地。",
+      "minimal_sentence_zh": "越来越多的人尝试探索各种目的地。",
+      "example_sentence_zh": "旅行者可以探索沿海城镇，了解当地饮食传统。",
+      "reason_zh": "原句指主动游览和了解地点，explore 比强调发现未知事物的 discover 更精准。",
+      "collocations_zh": [
+        "探索可能性",
+        "探讨一个概念",
+        "探索各种选择"
+      ]
+    }
+  ],
+  "synonym_expansions": [
+    {
+      "paragraph": 1,
+      "original": "try to discover",
+      "occurrence": 1,
+      "part_of_speech": "phr.",
+      "meaning_zh": "尝试发现",
+      "meaning_en": "make an effort to discover",
+      "synonyms": [
+        "attempt to discover",
+        "seek to discover",
+        "aim to discover"
+      ],
+      "synonyms_zh": [
+        "尝试发现",
+        "力求发现",
+        "旨在发现"
+      ]
+    }
+  ],
+  "topic_collocations": {
+    "topic": "Travel & Exploration",
+    "topic_zh": "旅行与探索",
+    "items": [
+      {
+        "phrase": "various destinations",
+        "phrase_zh": "各种目的地",
+        "example_sentence": "Travellers visit various destinations to learn about local cultures.",
+        "example_sentence_zh": "旅行者前往各种目的地，了解当地文化。",
+        "origin": "source",
+        "paragraph": 1,
+        "occurrence": 1
+      }
+    ]
+  }
+}

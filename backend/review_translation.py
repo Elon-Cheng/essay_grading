@@ -89,6 +89,8 @@ def scoped_slots(preview, scope='all', key=''):
 
 def feedback_slots(preview):
     """Yield writable feedback fields, never original/quote/correction/score/title."""
+    for item in preview.get('high_score_vocabulary', []):
+        yield item, 'reason'
     for item in preview.get('annotations', []):
         yield item, 'comment'
     review = preview.get('review', {})

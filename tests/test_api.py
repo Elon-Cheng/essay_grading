@@ -20,6 +20,7 @@ class GradingApiTests(unittest.TestCase):
             'AI_STREAM': '0',
             'AI_FORMAT_ATTEMPTS': '2',
             'AI_STRUCTURED_OUTPUT': '0',
+            'AI_LEARNING_ENABLED': '0',
         })
         self.settings.start()
         self.addCleanup(self.settings.stop)
@@ -50,9 +51,9 @@ class GradingApiTests(unittest.TestCase):
         self.assertEqual(post.call_args.args[0], 'https://www.su8.codes/v1/responses')
         self.assertEqual(post.call_args.kwargs['headers']['Authorization'], 'Bearer test-key')
         self.assertEqual(post.call_args.kwargs['json']['model'], 'gpt-5.5')
-        # A short essay must not resend the full coding skill and five overlapping references.
+        # Bound the teaching prompt plus both vocabulary skills and their schemas.
         payload = post.call_args.kwargs['json']
-        self.assertLess(len(json.dumps(payload, ensure_ascii=False)), 15000)
+        self.assertLess(len(json.dumps(payload, ensure_ascii=False)), 24000)
         self.assertEqual(json.loads(payload['input'][1]['content'])['paragraphs'], ['Essay'])
 
     def test_invalid_format_is_repaired_before_returning(self):
@@ -173,7 +174,7 @@ class GradingApiTests(unittest.TestCase):
                 app.run_job('independent-test', None)
             meta = json.loads((folder / 'meta.json').read_text(encoding='utf-8'))
             self.assertEqual(meta['status'], 'succeeded')
-            self.assertEqual(meta['channels'], {'annotations':'failed', 'report':'ready', 'translation':'ready'})
+            self.assertEqual(meta['channels'], {'annotations':'failed', 'report':'ready', 'learning':'unavailable', 'translation':'ready'})
             self.assertNotIn('error', meta)
             self.assertTrue((folder / 'grading.md').exists())
             with patch.object(app, 'DATA', root), patch.object(app, 'write_source_md', return_value=['Essay']), patch.object(app, 'call_openai', return_value=[]) as call, patch('backend.app.subprocess.run'):

@@ -54,6 +54,60 @@ def write_meta(path: Path, meta: dict[str, Any] | list) -> None:
         temporary.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
         temporary.replace(path)
 
+
+def saved_vocabulary(folder: Path, paragraphs: list[str]) -> list[dict]:
+    """Old reports have no vocabulary; validate optional cached data before use."""
+    if (folder / 'learning.json').exists():
+        return saved_learning(folder, paragraphs)['high_score_vocabulary']
+    try:
+        from backend.grading_contract import VocabularyUpgrade, validate_vocabulary
+        values = read_meta(folder / 'report.json').get('high_score_vocabulary', [])
+        items = [VocabularyUpgrade.model_validate(value) for value in values]
+        validate_vocabulary(items, paragraphs)
+        return [item.model_dump() for item in items]
+    except (OSError, ValueError, TypeError, AttributeError):
+        return []
+
+
+def saved_synonyms(folder: Path, paragraphs: list[str]) -> list[dict]:
+    """Read the independent expression library without regenerating old reports."""
+    if (folder / 'learning.json').exists():
+        return saved_learning(folder, paragraphs)['synonym_expansions']
+    try:
+        from backend.grading_contract import SynonymExpansion, validate_synonyms
+        values = read_meta(folder / 'report.json').get('synonym_expansions', [])
+        if not isinstance(values, list) or len(values) > 15:
+            return []
+        items = [SynonymExpansion.model_validate(value) for value in values]
+        validate_synonyms(items, paragraphs)
+        return [item.model_dump() for item in items]
+    except (OSError, ValueError, TypeError, AttributeError):
+        return []
+
+
+def saved_topic_collocations(folder: Path, paragraphs: list[str]) -> dict | None:
+    """Read the topic expression library and verify claimed source positions."""
+    if (folder / 'learning.json').exists():
+        return saved_learning(folder, paragraphs)['topic_collocations']
+    try:
+        from backend.grading_contract import TopicCollocations, validate_topic_collocations
+        value = read_meta(folder / 'report.json').get('topic_collocations')
+        if value is None:
+            return None
+        library = TopicCollocations.model_validate(value)
+        validate_topic_collocations(library, paragraphs)
+        return library.model_dump()
+    except (OSError, ValueError, TypeError, AttributeError):
+        return None
+
+def saved_learning(folder: Path, paragraphs: list[str]) -> dict:
+    from backend.learning import parse_learning
+    try:
+        return parse_learning((folder / 'learning.json').read_text(encoding='utf-8'), paragraphs)[0]
+    except (OSError, ValueError, TypeError):
+        return {'high_score_vocabulary': [], 'synonym_expansions': [], 'topic_collocations': None}
+
+
 def grading_marker() -> str:
     text = (ROOT / "backend" / "documents.py").read_text(encoding="utf-8")
     match = re.search(r'line\.strip\(\) == "([^"]+)"', text)
@@ -257,7 +311,7 @@ def validate_report(text, paragraphs):
 
 
 def call_openai(source: str, *, channel: str = 'report'):
-    if channel not in {'report', 'annotations'}:
+    if channel not in {'report', 'annotations', 'learning'}:
         raise ValueError('Unknown grading channel')
     key = os.getenv("OPENAI_API_KEY")
     if not key:
@@ -306,7 +360,7 @@ def call_openai(source: str, *, channel: str = 'report'):
                     with accounts.database() as db:
                         db.execute("UPDATE ai_calls SET status='failed',error_code='connection_not_submitted' WHERE id=?", (call_id,))
                     raise RuntimeError('AI 连接失败，请稍后重试；原始作文已保留') from None
-                if CURRENT_JOB.get():
+                if CURRENT_JOB.get() and channel != 'learning':
                     progress = getattr(exc, 'data', None)
                     if progress:
                         interrupted = DATA / CURRENT_JOB.get() / 'ai-interrupted'
@@ -349,6 +403,9 @@ def call_openai(source: str, *, channel: str = 'report'):
                 raise RuntimeError("API returned no grading text")
             raw_text = text
             try:
+                if channel == 'learning':
+                    from backend.learning import parse_learning
+                    return parse_learning(text, paragraphs)
                 if channel == 'annotations':
                     annotations = parse_annotations(text, paragraphs)
                     review_translation.validate_english_feedback({'annotations': annotations})
@@ -367,7 +424,7 @@ def call_openai(source: str, *, channel: str = 'report'):
                     text = render_report(structured_report, paragraphs, report_annotations)
                 validate_report(text, paragraphs)
                 if structured_report is not None and CURRENT_JOB.get():
-                    write_meta(DATA / CURRENT_JOB.get() / 'report.json', structured_report.model_dump())
+                    write_meta(DATA / CURRENT_JOB.get() / 'report.json', structured_report.model_dump(exclude_unset=True))
                 return text
             except ValueError as exc:
                 logger.warning("AI grading format validation failed (attempt %s, type %s)", attempt + 1, type(exc).__name__)
@@ -387,9 +444,13 @@ def call_openai(source: str, *, channel: str = 'report'):
                     {'role': 'assistant', 'content': raw_text},
                     {'role': 'user', 'content': (
                         'Repair the JSON to match the supplied schema. Return the complete JSON object only. '
-                        'Keep valid feedback and grading decisions. All feedback prose must be English. '
+                        + ('Keep valid learning content. English fields stay English; all *_zh fields must be Chinese. '
+                           if channel == 'learning' else
+                           'Keep valid feedback and grading decisions. All feedback prose must be English. ')
                         + ('Use the annotations key; quote exact substrings of the input paragraphs. '
                            if channel == 'annotations' else
+                           'Return the three learning modules only; preserve source anchors and aligned translations. '
+                           if channel == 'learning' else
                            'Cover each paragraph once. Do not copy source paragraphs, headings or tables. ')
                         + 'Validation errors: ' + str(exc)[:6000])},
                 ]
@@ -492,13 +553,32 @@ def run_job(job_id: str, start: str | None) -> None:
         meta.update(stage="rendering")
         save()
         subprocess.run([sys.executable, str(ROOT / "backend" / "documents.py"), "--source-docx", str(folder / "source.docx"), "--source-md", str(folder / "source.md"), "--grading-md", str(folder / "grading.md"), "--output-docx", str(folder / "graded.docx")], check=True, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60)
+        if (folder / 'learning.json').exists():
+            channels['learning'] = channels.get('learning', 'ready')
+        elif os.getenv('OPENAI_API_KEY') and not meta.get('is_demo') and os.getenv('AI_LEARNING_ENABLED', '1') != '0':
+            channels['learning'] = 'running'
+            save()
+            try:
+                learning, errors = call_openai(source, channel='learning')
+                write_meta(folder / 'learning.json', learning)
+                channels['learning'] = 'partial' if errors else 'ready'
+                if errors:
+                    write_meta(folder / 'learning-errors.json', errors)
+            except Exception as exc:
+                logger.warning('Independent learning channel failed for %s', job_id)
+                channels['learning'] = 'failed'
+                write_meta(folder / 'learning-errors.json', [str(exc)])
+            save()
+        else:
+            channels['learning'] = 'unavailable'
         if os.getenv('OPENAI_API_KEY') and not meta.get('is_demo'):
             channels['translation'] = 'running'
             meta.update(stage='translating')
             save()
             try:
                 translation_preview = {'annotations': json.loads(annotation_path.read_text(encoding='utf-8')) if annotation_path.exists() else [],
-                                       'review': report_sections(grading)}
+                                       'review': report_sections(grading),
+                                       'high_score_vocabulary': [] if (folder / 'learning.json').exists() else saved_vocabulary(folder, essay)}
                 review_translation.prepare_translations(folder, translation_preview, job_id)
                 channels['translation'] = 'ready'
             except Exception:
@@ -683,13 +763,24 @@ def preview(job_id: str, user=Depends(accounts.current_user)) -> dict[str, Any]:
         part['paragraph'] = i + 1
         part['feedback'] = [f for f in part['feedback'] if f['title'] != '语言提升']
     translations = review_translation.saved_translations(folder, {'annotations': annotations, 'review': review})
-    return {'source': source, 'grading': grading, 'original': paragraphs, 'prompt': prompt,
+    result = {'source': source, 'grading': grading, 'original': paragraphs, 'prompt': prompt,
             'translations': translations,
             'annotations': annotations, 'review': review, 'language_learning': language,
             'channels': {
                 'annotations': channels.get('annotations', 'ready' if (folder / 'annotations.json').exists() else 'unavailable'),
                 'report': channels.get('report', 'ready' if grading else 'pending'),
+                'learning': channels.get('learning', 'ready' if (folder / 'learning.json').exists() else 'unavailable'),
             }}
+    vocabulary = saved_vocabulary(folder, paragraphs)
+    if vocabulary:
+        result['high_score_vocabulary'] = vocabulary
+    synonyms = saved_synonyms(folder, paragraphs)
+    if synonyms:
+        result['synonym_expansions'] = synonyms
+    topic_collocations = saved_topic_collocations(folder, paragraphs)
+    if topic_collocations is not None:
+        result['topic_collocations'] = topic_collocations
+    return result
 
 
 @app.get("/api/essays/{job_id}/download")

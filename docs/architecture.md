@@ -8,15 +8,16 @@
 - `grading_contract.py`、`grading_protocol.py`、`report_normalization.py`：结构化报告、原文保真及历史结果兼容。
 - `documents.py`：DOCX 生成和校验，可独立命令行执行。
 - `review_annotations.py`、`review_translation.py`：原文锚定批注与预生成的中英文点评。
-- `skill_prompt.py`、`references/`：两路批改提示词及教学规范。
+- `skill_prompt.py`、`references/`：词句批注、全文报告、词汇积累三路独立提示词及教学规范。
+- `learning.py`：高分词、近义词、话题词伙的双语结构与逐条校验。
 - `worker.py`、`ai_transport.py`：持久队列、并发、API 请求与失败恢复。
 - 账号、数据库、额度和支付模块：保留已有功能及数据兼容。
 
-原文上传后分别生成词句批注和全文报告，再生成完整 Word 文档并准备译文。已完成结果分别保存在任务目录，重试复用有效缓存。
+原文上传后分别生成词句批注和全文报告，再生成完整 Word 文档、独立双语词汇库并准备点评译文。结果分别保存为 `annotations.json`、`report.json`／`grading.md`、`graded.docx`、`learning.json` 和点评译文缓存，重试复用有效缓存。词汇中无效条目单独剔除，生成失败不影响原评分和 Word；历史报告不自动补生成词汇或扣费。
 
 ## 前端：`frontend/`
 
-保留原有 HTML、CSS、JavaScript。文件内容未改写，三栏比例、84px 评分、独立滚动、英文/中文切换及交互均保持原样。物理目录从 `static/` 迁为 `frontend/`，对外资源地址仍为 `/static/`，无需更改浏览器代码。
+原有三栏比例、84px 评分和独立滚动保持原样。“词句批改 → 词汇积累 → 逐段批改”页签由 HTML 与 JavaScript 渲染；`learning.js`／`learning.css` 展示三个独立词汇模块并在已有中英文数据间切换，不发起翻译请求。物理目录为 `frontend/`，对外资源地址仍为 `/static/`。
 
 前端只负责上传、轮询、展示、语言切换和下载。批改规则、分数校验、译文准备及 DOCX 生成由后端负责。
 

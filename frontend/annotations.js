@@ -161,6 +161,7 @@ const EssayReview = (() => {
     document.querySelector('#correction-count').textContent = correctionCount;
     document.querySelector('#paragraph-count').textContent = paragraphs.length;
     if (!correctionCount) corrections.innerHTML = `<div class="tab-empty">${emptyMessage(states.annotations, '词句批改')}</div>`;
+    if (typeof EssayLearning !== 'undefined') EssayLearning.render(preview);
     selectTab(activeTab === 'corrections' && !correctionCount && paragraphs.length ? 'paragraphs' : activeTab);
     let summary = review.overall || '';
     const score = summary.match(/^本篇文章打分估计为[：:]\s*(.+?)分[。.]?\s*$/m);

@@ -56,11 +56,53 @@ class Score(Contract):
     organization_band: Literal['A', 'B', 'C', 'D', 'E']
 
 
-class Report(Contract):
+class VocabularyUpgrade(Contract):
+    paragraph: int = Field(ge=1)
+    source_sentence: EnglishText = Field(min_length=1, max_length=4000)
+    sentence_occurrence: int = Field(ge=1, le=100)
+    original: EnglishText = Field(min_length=1, max_length=200)
+    replacement: EnglishText = Field(min_length=1, max_length=200)
+    word_occurrence: int = Field(ge=1, le=100)
+    minimal_sentence: EnglishText = Field(min_length=1, max_length=4000)
+    example_sentence: EnglishText = Field(min_length=1, max_length=4000)
+    reason: EnglishText = Field(min_length=1, max_length=4000)
+    collocations: list[EnglishText] = Field(min_length=2, max_length=4)
+
+
+class SynonymExpansion(Contract):
+    paragraph: int = Field(ge=1)
+    original: EnglishText = Field(min_length=1, max_length=200)
+    occurrence: int = Field(ge=1, le=100)
+    part_of_speech: Literal['n.', 'v.', 'adj.', 'adv.', 'phr.']
+    meaning_zh: str = Field(min_length=1, max_length=200, pattern=r'[\u3400-\u9fff]')
+    synonyms: list[Annotated[EnglishText, Field(min_length=1, max_length=200)]] = Field(min_length=3, max_length=5)
+
+
+class TopicCollocation(Contract):
+    phrase: EnglishText = Field(min_length=1, max_length=200)
+    example_sentence: EnglishText = Field(min_length=1, max_length=1000)
+    origin: Literal['source', 'supplement']
+    paragraph: int = Field(ge=0)
+    occurrence: int = Field(ge=0, le=100)
+
+
+class TopicCollocations(Contract):
+    topic: EnglishText = Field(min_length=1, max_length=100)
+    items: list[TopicCollocation] = Field(max_length=10)
+
+
+class CoreReport(Contract):
     context: EnglishText = Field(min_length=1, max_length=4000)
     paragraphs: list[ParagraphFeedback]
     evaluation: Evaluation
     score: Score
+
+
+class Report(CoreReport):
+    # Legacy saved reports remain valid; new provider responses require the field.
+    high_score_vocabulary: list[VocabularyUpgrade] = Field(default_factory=list, max_length=300)
+    synonym_expansions: list[SynonymExpansion] = Field(default_factory=list, max_length=15)
+    topic_collocations: TopicCollocations | None = None
 
 
 class Annotation(Contract):
@@ -78,10 +120,14 @@ class Annotations(Contract):
 
 
 def output_schema(channel):
-    schema = {'report': Report, 'annotations': Annotations}[channel].model_json_schema()
+    from backend.learning import LearningModules
+    schema = {'report': CoreReport, 'annotations': Annotations, 'learning': LearningModules}[channel].model_json_schema()
     def compact(value):
         if isinstance(value, dict):
-            return {key: compact(item) for key, item in value.items() if key != 'title'}
+            result = {key: compact(item) for key, item in value.items() if key not in ('title', 'default')}
+            if value.get('type') == 'object':
+                result['required'] = list(value['properties'])
+            return result
         if isinstance(value, list):
             return [compact(item) for item in value]
         return value
@@ -89,8 +135,14 @@ def output_schema(channel):
 
 
 def schema_prompt(channel):
+    if channel == 'learning':
+        return ('Return only JSON matching this schema. English fields remain English; '
+                'all *_zh fields must contain faithful Chinese counterparts. Do not grade the essay.\n'
+                + json.dumps(output_schema(channel), ensure_ascii=False, separators=(',', ':')))
+    vocabulary_note = ''
     return ('Return one JSON object matching this schema. All feedback prose must be English. '
-            'Do not output Markdown headings, tables, source paragraphs or correction markup.\n'
+            'Do not output Markdown headings, tables, source paragraphs or correction markup.'
+            + vocabulary_note + '\n'
             + json.dumps(output_schema(channel), ensure_ascii=False, separators=(',', ':')))
 
 
@@ -141,7 +193,132 @@ def parse_report(text, paragraphs):
             raise ValueError(f'evaluation.{key} requires nonempty feedback in every field')
     if not report.context.strip():
         raise ValueError('context must contain the task analysis or its limitations')
+    errors = []
+    for validate, value in ((validate_vocabulary, report.high_score_vocabulary),
+                            (validate_synonyms, report.synonym_expansions),
+                            (validate_topic_collocations, report.topic_collocations)):
+        try:
+            validate(value, paragraphs)
+        except ValueError as exc:
+            errors.append(str(exc))
+    if errors:
+        raise ValueError('\n'.join(errors))
     return report
+
+
+def validate_topic_collocations(library, paragraphs):
+    """Check reusable units, example usage and honest source provenance."""
+    if library is None:
+        return
+    if not library.topic.strip():
+        raise ValueError('topic_collocations requires a nonempty topic')
+    seen = set()
+    for index, item in enumerate(library.items):
+        if item.phrase != item.phrase.strip() or len(item.phrase.split()) < 2:
+            raise ValueError('topic_collocations requires a complete multiword phrase')
+        identity = ' '.join(item.phrase.casefold().split())
+        if identity in seen:
+            raise ValueError('topic_collocations contains duplicate phrases')
+        seen.add(identity)
+        target = r'(?<!\w)' + re.escape(item.phrase) + r'(?!\w)'
+        if not re.search(target, item.example_sentence, re.I):
+            raise ValueError('topic_collocations example must contain the complete phrase; '
+                             f'items[{index}].example_sentence must contain {item.phrase!r} '
+                             'without changing internal words, pronouns or inflections')
+        if item.origin == 'source':
+            if not 1 <= item.paragraph <= len(paragraphs) or item.occurrence < 1:
+                raise ValueError('topic_collocations source requires a valid paragraph and occurrence')
+            matches = list(re.finditer(target, paragraphs[item.paragraph - 1]))
+            if item.occurrence > len(matches):
+                raise ValueError('topic_collocations source phrase must match the original verbatim')
+        elif item.paragraph != 0 or item.occurrence != 0:
+            raise ValueError('topic_collocations supplements must not claim original source positions')
+
+
+def validate_synonyms(items, paragraphs):
+    """Validate source anchors and distinct alternatives; semantics follow the Skill."""
+    seen = set()
+    for item in items:
+        if item.paragraph > len(paragraphs):
+            raise ValueError('synonym_expansions paragraph is outside the source')
+        if not item.original.strip() or item.original != item.original.strip():
+            raise ValueError('synonym_expansions requires a nonempty original expression without outer spaces')
+        target = r'(?<!\w)' + re.escape(item.original) + r'(?!\w)'
+        matches = list(re.finditer(target, paragraphs[item.paragraph - 1]))
+        if item.occurrence > len(matches):
+            raise ValueError('synonym_expansions original must match a complete source expression verbatim')
+        identity = ' '.join(item.original.casefold().split())
+        if identity in seen:
+            raise ValueError('synonym_expansions contains duplicate original expressions')
+        seen.add(identity)
+        alternatives = [' '.join(text.casefold().split()) for text in item.synonyms]
+        if (any(not text.strip() or text != text.strip() for text in item.synonyms)
+                or identity in alternatives or len(set(alternatives)) != len(alternatives)):
+            raise ValueError('synonym_expansions requires distinct nonempty alternatives different from the original')
+
+
+def validate_vocabulary(items, paragraphs):
+    """Check source fidelity and single-target changes, not semantic superiority."""
+    seen = set()
+    for index, item in enumerate(items):
+        if item.paragraph > len(paragraphs):
+            raise ValueError('high_score_vocabulary paragraph is outside the source')
+        for field in ('source_sentence', 'original', 'replacement', 'minimal_sentence',
+                      'example_sentence', 'reason'):
+            if not getattr(item, field).strip():
+                raise ValueError('high_score_vocabulary requires nonempty ' + field)
+        sentences = list(re.finditer(re.escape(item.source_sentence), paragraphs[item.paragraph - 1]))
+        if item.sentence_occurrence > len(sentences):
+            raise ValueError('high_score_vocabulary source sentence must match the original verbatim; '
+                             f'items[{index}].sentence_occurrence={item.sentence_occurrence}, '
+                             f'exact sentence occurs {len(sentences)} time(s) in paragraph {item.paragraph}. '
+                             'Count identical occurrences, not the sentence position within the paragraph.')
+        target = r'(?<!\w)' + re.escape(item.original) + r'(?!\w)'
+        matches = list(re.finditer(target, item.source_sentence))
+        if item.word_occurrence > len(matches):
+            raise ValueError('high_score_vocabulary original must match a complete word or phrase')
+        match = matches[item.word_occurrence - 1]
+        identity = (item.paragraph, sentences[item.sentence_occurrence - 1].start() + match.start())
+        if identity in seen:
+            raise ValueError('high_score_vocabulary contains duplicate targets')
+        seen.add(identity)
+        if item.original.casefold() == item.replacement.casefold():
+            raise ValueError('high_score_vocabulary replacement must differ from the original')
+        expected = item.source_sentence[:match.start()] + item.replacement + item.source_sentence[match.end():]
+        if item.minimal_sentence != expected:
+            raise ValueError('high_score_vocabulary minimal sentence must change only the target; '
+                             f'items[{index}].minimal_sentence must equal {expected!r}')
+        recommended = r'(?<!\w)' + re.escape(item.replacement) + r'(?!\w)'
+        if (item.example_sentence.strip() == item.minimal_sentence.strip()
+                or not re.search(recommended, item.example_sentence)):
+            raise ValueError('high_score_vocabulary needs a new example using the replacement; '
+                             f'items[{index}].example_sentence must contain {item.replacement!r} '
+                             'and must differ from minimal_sentence')
+        collocation_pattern = r'(?<!\w)(?:' + '|'.join(re.escape(form) for form in collocation_forms(item.replacement)) + r')(?!\w)'
+        if (len({text.strip().casefold() for text in item.collocations}) != len(item.collocations)
+                or any(not re.search(collocation_pattern, text, re.I) for text in item.collocations)):
+            raise ValueError('high_score_vocabulary needs distinct collocations using the replacement; '
+                             f'items[{index}].collocations must use {item.replacement!r} or its regular s-form base. '
+                             'For a multiword replacement retain the complete phrase.')
+
+
+def collocation_forms(replacement):
+    """Dictionary collocations may use the regular base of a single s-form word.
+
+    This is not a general lemmatizer: multiword replacements stay intact, and
+    irregular or other inflections are not guessed.
+    """
+    forms = [replacement]
+    if not re.fullmatch(r'[A-Za-z]{4,}', replacement):
+        return forms
+    lower = replacement.lower()
+    if lower.endswith('ies'):
+        forms.append(replacement[:-3] + 'y')
+    elif lower.endswith(('ches', 'shes', 'sses', 'xes', 'zes', 'oes')):
+        forms.append(replacement[:-2])
+    elif lower.endswith('s') and not lower.endswith('ss'):
+        forms.append(replacement[:-1])
+    return forms
 
 
 def prose(value):

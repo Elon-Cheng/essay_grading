@@ -116,7 +116,7 @@ class ContractTests(unittest.TestCase):
             elif isinstance(value, list):
                 for item in value:
                     check(item)
-        for channel in ('report', 'annotations'):
+        for channel in ('report', 'annotations', 'learning'):
             check(output_schema(channel))
 
     def test_schema_fallback_requires_explicit_parameter_rejection(self):
@@ -162,7 +162,7 @@ class ContractTests(unittest.TestCase):
                          for output in ({'annotations': []}, data)]
             with patch.object(app, 'DATA', root), patch.object(accounts, 'DB', root / 'test.sqlite3'), \
                     patch.dict(os.environ, {'OPENAI_API_KEY': 'test', 'AI_STREAM': '0',
-                                           'AI_STRUCTURED_OUTPUT': '1'}), \
+                                           'AI_STRUCTURED_OUTPUT': '1', 'AI_LEARNING_ENABLED': '0'}), \
                     patch.object(app.review_translation, 'prepare_translations', return_value={}):
                 accounts.initialize()
                 with patch('backend.ai_transport.request_response', side_effect=responses) as request:

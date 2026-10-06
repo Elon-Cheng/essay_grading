@@ -5,13 +5,15 @@ COMMON = ('grading-levels.md', 'teacher-style.md', 'feedback-language.md', 'erro
 CHANNELS = {
     'annotations': ('word-span-annotations.md', 'highlight-expression-principles.md', 'web-annotations-prompt.md'),
     'report': ('scoring-rubric.md', 'comprehensive-evaluation.md', 'web-grading-prompt.md'),
+    'learning': ('high-score-vocabulary/SKILL.md', 'synonym-expansion/SKILL.md',
+                 'topic-collocations/SKILL.md', 'web-learning-prompt.md'),
 }
 
 
 def prompt_files(channel):
     if channel not in CHANNELS:
         raise ValueError('Unknown grading channel')
-    return COMMON + CHANNELS[channel]
+    return (() if channel == 'learning' else COMMON) + CHANNELS[channel]
 
 
 def build_grading_prompt(root: Path, channel: str):
